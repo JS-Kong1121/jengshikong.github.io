@@ -8,7 +8,10 @@ Here are my research projects and work:
 
 ## Final Report
 
-My final project for CELL 6351 - Intro to Reproducible Data Analysis Using R.
+My final project for CELL 6351 - Intro to Reproducible Data Analysis Using R is as below:
+Cognitive decline is a common feature of aging and is shaped by both modifiable and nonmodifiable factors, including physical fitness, psychological stress, and genetic predisposition. In some individuals, cognitive deterioration may occur at an accelerated rate and progress to mild cognitive impairment, thereby increasing the risk of Alzheimer’s disease and related dementias. Despite advances in the management of cognitive decline, the development of effective interventions to prevent or delay its progression remains challenging because of the complex interplay among the biological, behavioral, environmental, and genetic factors that influence cognitive aging.
+
+This project aims to characterize cognitive performance among adults aged 18 to 59 years by: (1) determining whether individuals with similar behavioral profiles exhibit similar cognitive performance and (2) identifying the behavioral factors that are the strongest predictors of cognitive performance. Clustering methods will be used to group individuals according to sleep duration, stress level, diet type, daily screen time, exercise frequency, and caffeine intake. Machine-learning models, including random forest and regression-based approaches, will then be developed to determine the relative importance of these behavioral factors and predict cognitive performance.
 
 [**View Final Report** →](projects/final-report.qmd)
 

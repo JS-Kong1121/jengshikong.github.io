@@ -1,18 +1,17 @@
 ---
-title: "Your Name"
+title: "Jeng Shi Kong"
 toc: false
-image: "your photo.jpg"
+image: "image.jpeg"
 about:
   template: trestles
   links:
   - text: GitHub
-    href: link
+    href: https://github.com/JS-Kong1121/jengshikong.github.io
   - text: email
-    href:  link
+    href: jengshi-kong@ou.edu
 ---
 
-::: {.columnpage}
-
+::: columnpage
 # Hello! 👋
 
 Welcome to my research profile website. I'm a student in the Intro to Reproducible Data Analysis Using R course.
@@ -21,14 +20,14 @@ Welcome to my research profile website. I'm a student in the Intro to Reproducib
 
 Replace this section with information about yourself:
 
-- **Name:** Your Name Here
-- **Institution:** Your University
-- **Research Interests:** Add your research interests here
-- **Email:** your.email@university.edu
+- **Name:** Jeng Shi Kong
+- **Institution:** University of Oklahoma
+- **Research Interests:** Neuroscience, Neurology, Stroke, Brain aging,
+- **Email:** jengshi-kong\@ou.edu
 
 ## My Research
 
-I'm interested in understanding [your topic area]. Through this course, I've learned how to:
+I'm interested in understanding neuroscience, neurology, physiology, behavioral neuroscience,stroke management and brain aging. Through this course, I've learned how to:
 
 - Use R for data analysis
 - Create reproducible research workflows
@@ -46,6 +45,7 @@ As my research progresses, I'll continue adding:
 - New analyses and projects
 - Additional resources
 
----
+------------------------------------------------------------------------
 
 **Keep exploring!** Navigate using the menu above.
+:::

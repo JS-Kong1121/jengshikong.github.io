@@ -1,10 +1,10 @@
 ---
 title: "Final Report: [Your Project Title]"
-date: 2026-06-04
-author: "Your Name"
+date: 2026-07-29
+author: "Jeng Shi Kong"
 ---
 
-# Final Report: [Your Project Title]
+# Final Report: \[Your Project Title\]
 
 ## Introduction
 
@@ -28,6 +28,11 @@ Share your findings here. You can include:
 Here's a sample R code block:
 
 ```{r}
+#| code-fold: true
+#| echo: false
+#| error: false
+#| message: false
+
 # Load a library
 library(ggplot2)
 
@@ -43,10 +48,10 @@ plot(data$x, data$y)
 
 ### Example Table
 
-| Method | Result | P-value |
-|--------|--------|---------|
-| Analysis 1 | Significant | 0.01 |
-| Analysis 2 | Not Significant | 0.15 |
+| Method     | Result          | P-value |
+|------------|-----------------|---------|
+| Analysis 1 | Significant     | 0.01    |
+| Analysis 2 | Not Significant | 0.15    |
 
 ## Discussion
 
@@ -60,6 +65,6 @@ Summarize your findings and their implications.
 
 Add any references to papers, data sources, or resources you used.
 
----
+------------------------------------------------------------------------
 
 **Last updated:** June 2026
