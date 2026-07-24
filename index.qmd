@@ -8,7 +8,7 @@ about:
   - text: GitHub
     href: https://github.com/JS-Kong1121/jengshikong.github.io
   - text: email
-    href: "mailto:jengshi-kong@ou.edu"
+    href: mailto:jengshi-kong@ou.edu
 ---
 
 ::: columnpage
