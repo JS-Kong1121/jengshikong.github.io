@@ -10,7 +10,6 @@ author: "Jeng Shi Kong"
 
 Cognitive decline is a common feature of aging and is shaped by both modifiable and nonmodifiable factors, including physical fitness, psychological stress, and genetic predisposition. In some individuals, cognitive deterioration may occur at an accelerated rate and progress to mild cognitive impairment, thereby increasing the risk of Alzheimer’s disease and related dementias. Despite advances in the management of cognitive decline, the development of effective interventions to prevent or delay its progression remains challenging because of the complex interplay among the biological, behavioral, environmental, and genetic factors that influence cognitive aging.
 
-
 ## Aim of the study
 
 This project aims to characterize cognitive performance among adults aged 18 to 59 years by: (1) determining whether individuals with similar behavioral profiles exhibit similar cognitive performance and (2) identifying the behavioral factors that are the strongest predictors of cognitive performance. 
@@ -72,6 +71,7 @@ ggplot(age_data_plot, aes(x = age_group, y = cognitive_assessment_score, color =
   geom_boxplot()+
   theme_cowplot()+
   labs(subtitle = "Cognitive assessment scores between age groups", x = "Age group", y = "Cognitive assessment score")
+
 ```
 
 Good to know that quite a bit of participants are age 18.
@@ -160,9 +160,13 @@ pca_prep |>
 
 ```
 
+![Better image for percent variance of PCs](images/PCs.png)
+
 As we can see that first 5 PCs only explain 51.2% of variances, and the first 10 PCs explain 84.5% of total variances. But since we only have 15 variables, the dimensionality reduction with PCA is fairly small.
 
+Now, let's run random forest & linear regression to determine which model can help us better at predicting cognitive performance, as well as which variables hold most importance in influencing cognitive performance.
 
+Let's have a look at how cognitive performance distributes across group.
 
 ### Random Forest & Linear Regressions
 ```{r}
@@ -188,8 +192,35 @@ grouped_data <- raw |>
   smoking_status != "Current" ~ 0)
   )
 
+age_grouped_data <- grouped_data |> 
+  mutate(age_group = factor(case_when(
+  age >= 18 & age < 40 ~ "Younger adults",
+  age >= 40 & age < 65 ~ "Middle-aged adults",
+  age >= 65 & age <=90 ~ "Older adults"),
+  levels = c("Younger adults", "Middle-aged adults", "Older adults"),
+  ordered = TRUE)
+  )
+
+ggplot(age_grouped_data, aes(x = Performance_i, fill = age_group)) +
+  geom_bar() +
+  theme_cowplot()+
+  labs(subtitle = "Cognitive performance distribution by age group", x = "Performance")+
+  scale_y_continuous(labels = label_number(big.mark = ","))
+
+ggplot(age_grouped_data, aes(x = Performance_i, fill = smoking_status)) +
+  geom_bar() +
+  theme_cowplot()+
+  scale_color_viridis_d() +
+  labs(subtitle = "Cognitive performance distribution by smoking status", x = "Performance")+
+  scale_y_continuous(labels = label_number(big.mark = ",")) 
+  
+
 data_i <- subset(grouped_data, select = -c(smoking_status, cognitive_assessment_score)) 
 ```
+
+We have a good number of high cognitive performers in the data set.
+
+Preparing our data set.
 
 ```{r}
 # set a seed in order to make the analysis reproducible.
@@ -236,6 +267,8 @@ data_bake
 
 ```
 
+Running random forest. Set mode "classification" for our discrete outcome (cognitive performance), engine "ranger", importance "impurity", 17 predictors, trees are set to 1000.
+
 ```{r}
 # MODEL 1 Random Forest
 rf_model <- 
@@ -249,7 +282,7 @@ rf_model <-
   # engine/package that underlies the model (ranger is default)
   set_engine("ranger", importance = "impurity") |>
   
-  # we only have 4 predictors so mtry can't be more than 4
+  # 17 predictors
   set_args(mtry = 17, trees = 1000)
   
 
@@ -270,7 +303,10 @@ rf_importance <- rf_engine$variable.importance
 
 rf_importance
 
+rank(rf_importance)
 ```
+
+Here we see that age shows the highest importance, followed by diet_ultra_processed_pct, cardio_mins_wk, novel_learning_hrs_wk, and chronic_stress_score. Let's continue with linear regression model.
 
 ```{r}
 
@@ -295,9 +331,9 @@ lr_wflow <-
 
 # train the model
 lr_fit <- fit(lr_wflow, data_training)
-
-
 ```
+
+Now that we finish training our models, let's test them.
 
 ```{r}
 
@@ -361,24 +397,14 @@ rbind(rf.eval, lr.eval)
 
 ```
 
-|         | accuracy | specificity | sensitivity | precision |
-|---------|----------|-------------|-------------|-----------|
-| rf.eval | 0.9104   | 0.8770378   | 0.7510783   | 0.4693407 |
-| lr.eval | 0.9048   | 0.8686475   | 0.7324793   | 0.5021380 |
+ 
 
 What if we group age together.
 
+### Age grouped rf & lr
+
 ```{r}
 # rf & lr: Prepare the dataset
-age_grouped_data <- grouped_data |> 
-  mutate(age_group = factor(case_when(
-  age >= 18 & age < 40 ~ "Younger adults",
-  age >= 40 & age < 65 ~ "Middle-aged adults",
-  age >= 65 & age <=90 ~ "Older adults"),
-  levels = c("Younger adults", "Middle-aged adults", "Older adults"),
-  ordered = TRUE)
-  )
-
 cleaned_data <- age_grouped_data |>
     mutate(Younger_adults = case_when(
     age_group == "Younger adults" ~ 1,
@@ -405,7 +431,7 @@ data_final2 <- data_i2 |>
   slice_sample(n= 80000)
 
 # split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. 
-split_data2 <- initial_split(data_final2, prop=2/3, strata = Performance_i)
+split_data2 <- initial_split(data_final2, prop=1/2, strata = Performance_i)
 data_training2 <- training(split_data2)
 data_testing2 <- testing(split_data2)
 
@@ -473,7 +499,11 @@ rf_engine2 <- extract_fit_engine(rf_fit2)
 rf_importance2 <- rf_engine2$variable.importance
 
 rf_importance2
+
+rank(rf_importance2)
 ```
+
+Diet_ultra_processed is now holding the highest importance, followed by cardio_mins_wk, older adults, novel_learning_hrs_wk, and systolic blood pressure.
 
 ```{r}
 
@@ -498,7 +528,6 @@ lr_wflow2 <-
 
 # train the model
 lr_fit2 <- fit(lr_wflow2, data_training2)
-
 
 ```
 
@@ -567,13 +596,13 @@ rbind(rf.eval2, lr.eval2)
 
 ## Discussion
 
-PCA & UMAP might not be the best approach for behavioral data, especially when no distinctive features (e.g. race, region, country) are present.
+Age holds the highest importance, followed by ultra processed diet, cardio mins wk, novel learning hrs wk, and chronic stress score.
 
-Random forest has higher accuracy, specificity and sensitivity, while logistic regression has higher precision.
+Random forest has higher accuracy, specificity and sensitivity, while logistic regression has higher precision. However, the precision in both random forest and logistic regression are fairly low. 
 
 ## Conclusions
 
-Higher dimensions might be necessary for the dataset to clarify the
+Low precision due to high cognitive performer numbers in the dataset. Increasing number of low and average performers will help training the model.
 
 ## References
 

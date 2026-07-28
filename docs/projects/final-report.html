@@ -171,6 +171,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#correlation-matrix" id="toc-correlation-matrix" class="nav-link" data-scroll-target="#correlation-matrix">Correlation matrix</a></li>
   <li><a href="#pca" id="toc-pca" class="nav-link" data-scroll-target="#pca">PCA</a></li>
   <li><a href="#random-forest-linear-regressions" id="toc-random-forest-linear-regressions" class="nav-link" data-scroll-target="#random-forest-linear-regressions">Random Forest &amp; Linear Regressions</a></li>
+  <li><a href="#age-grouped-rf-lr" id="toc-age-grouped-rf-lr" class="nav-link" data-scroll-target="#age-grouped-rf-lr">Age grouped rf &amp; lr</a></li>
   </ul></li>
   <li><a href="#discussion" id="toc-discussion" class="nav-link" data-scroll-target="#discussion">Discussion</a></li>
   <li><a href="#conclusions" id="toc-conclusions" class="nav-link" data-scroll-target="#conclusions">Conclusions</a></li>
@@ -583,7 +584,15 @@ id:         1</code></pre>
 </div>
 </div>
 </div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="images/PCs.png" class="img-fluid figure-img"></p>
+<figcaption>Better image for percent variance of PCs</figcaption>
+</figure>
+</div>
 <p>As we can see that first 5 PCs only explain 51.2% of variances, and the first 10 PCs explain 84.5% of total variances. But since we only have 15 variables, the dimensionality reduction with PCA is fairly small.</p>
+<p>Now, let’s run random forest &amp; linear regression to determine which model can help us better at predicting cognitive performance, as well as which variables hold most importance in influencing cognitive performance.</p>
+<p>Let’s have a look at how cognitive performance distributes across group.</p>
 </section>
 <section id="random-forest-linear-regressions" class="level3">
 <h3 class="anchored" data-anchor-id="random-forest-linear-regressions">Random Forest &amp; Linear Regressions</h3>
@@ -610,28 +619,64 @@ id:         1</code></pre>
 <span id="cb58-20"><a href="#cb58-20" aria-hidden="true" tabindex="-1"></a>  smoking_status <span class="sc">!=</span> <span class="st">"Current"</span> <span class="sc">~</span> <span class="dv">0</span>)</span>
 <span id="cb58-21"><a href="#cb58-21" aria-hidden="true" tabindex="-1"></a>  )</span>
 <span id="cb58-22"><a href="#cb58-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb58-23"><a href="#cb58-23" aria-hidden="true" tabindex="-1"></a>data_i <span class="ot">&lt;-</span> <span class="fu">subset</span>(grouped_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(smoking_status, cognitive_assessment_score)) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb58-23"><a href="#cb58-23" aria-hidden="true" tabindex="-1"></a>age_grouped_data <span class="ot">&lt;-</span> grouped_data <span class="sc">|&gt;</span> </span>
+<span id="cb58-24"><a href="#cb58-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">age_group =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb58-25"><a href="#cb58-25" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">18</span> <span class="sc">&amp;</span> age <span class="sc">&lt;</span> <span class="dv">40</span> <span class="sc">~</span> <span class="st">"Younger adults"</span>,</span>
+<span id="cb58-26"><a href="#cb58-26" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">40</span> <span class="sc">&amp;</span> age <span class="sc">&lt;</span> <span class="dv">65</span> <span class="sc">~</span> <span class="st">"Middle-aged adults"</span>,</span>
+<span id="cb58-27"><a href="#cb58-27" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">65</span> <span class="sc">&amp;</span> age <span class="sc">&lt;=</span><span class="dv">90</span> <span class="sc">~</span> <span class="st">"Older adults"</span>),</span>
+<span id="cb58-28"><a href="#cb58-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Younger adults"</span>, <span class="st">"Middle-aged adults"</span>, <span class="st">"Older adults"</span>),</span>
+<span id="cb58-29"><a href="#cb58-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">ordered =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb58-30"><a href="#cb58-30" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb58-31"><a href="#cb58-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb58-32"><a href="#cb58-32" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(age_grouped_data, <span class="fu">aes</span>(<span class="at">x =</span> Performance_i, <span class="at">fill =</span> age_group)) <span class="sc">+</span></span>
+<span id="cb58-33"><a href="#cb58-33" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb58-34"><a href="#cb58-34" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_cowplot</span>()<span class="sc">+</span></span>
+<span id="cb58-35"><a href="#cb58-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"Cognitive performance distribution by age group"</span>, <span class="at">x =</span> <span class="st">"Performance"</span>)<span class="sc">+</span></span>
+<span id="cb58-36"><a href="#cb58-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">big.mark =</span> <span class="st">","</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="final-report_files/figure-html/unnamed-chunk-5-1.png" class="img-fluid figure-img" width="672"></p>
+</figure>
 </div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ggplot</span>(age_grouped_data, <span class="fu">aes</span>(<span class="at">x =</span> Performance_i, <span class="at">fill =</span> smoking_status)) <span class="sc">+</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_bar</span>() <span class="sc">+</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_cowplot</span>()<span class="sc">+</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_viridis_d</span>() <span class="sc">+</span></span>
+<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"Cognitive performance distribution by smoking status"</span>, <span class="at">x =</span> <span class="st">"Performance"</span>)<span class="sc">+</span></span>
+<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_y_continuous</span>(<span class="at">labels =</span> <span class="fu">label_number</span>(<span class="at">big.mark =</span> <span class="st">","</span>)) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="final-report_files/figure-html/unnamed-chunk-5-2.png" class="img-fluid figure-img" width="672"></p>
+</figure>
+</div>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb60"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a>data_i <span class="ot">&lt;-</span> <span class="fu">subset</span>(grouped_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(smoking_status, cognitive_assessment_score)) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>We have a good number of high cognitive performers in the data set.</p>
+<p>Preparing our data set.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb59"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set a seed in order to make the analysis reproducible.</span></span>
-<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">666</span>)</span>
-<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.</span></span>
-<span id="cb59-5"><a href="#cb59-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-6"><a href="#cb59-6" aria-hidden="true" tabindex="-1"></a>data_final <span class="ot">&lt;-</span> data_i <span class="sc">|&gt;</span></span>
-<span id="cb59-7"><a href="#cb59-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span> <span class="dv">80000</span>)</span>
-<span id="cb59-8"><a href="#cb59-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-9"><a href="#cb59-9" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. </span></span>
-<span id="cb59-10"><a href="#cb59-10" aria-hidden="true" tabindex="-1"></a>split_data <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(data_final, <span class="at">prop=</span><span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">strata =</span> Performance_i)</span>
-<span id="cb59-11"><a href="#cb59-11" aria-hidden="true" tabindex="-1"></a>data_training <span class="ot">&lt;-</span> <span class="fu">training</span>(split_data)</span>
-<span id="cb59-12"><a href="#cb59-12" aria-hidden="true" tabindex="-1"></a>data_testing <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_data)</span>
-<span id="cb59-13"><a href="#cb59-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-14"><a href="#cb59-14" aria-hidden="true" tabindex="-1"></a><span class="co"># lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  </span></span>
-<span id="cb59-15"><a href="#cb59-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb59-16"><a href="#cb59-16" aria-hidden="true" tabindex="-1"></a>data_training <span class="sc">|&gt;</span> </span>
-<span id="cb59-17"><a href="#cb59-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
-<span id="cb59-18"><a href="#cb59-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
-<span id="cb59-19"><a href="#cb59-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_training) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set a seed in order to make the analysis reproducible.</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">666</span>)</span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>data_final <span class="ot">&lt;-</span> data_i <span class="sc">|&gt;</span></span>
+<span id="cb61-7"><a href="#cb61-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span> <span class="dv">80000</span>)</span>
+<span id="cb61-8"><a href="#cb61-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-9"><a href="#cb61-9" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. </span></span>
+<span id="cb61-10"><a href="#cb61-10" aria-hidden="true" tabindex="-1"></a>split_data <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(data_final, <span class="at">prop=</span><span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">strata =</span> Performance_i)</span>
+<span id="cb61-11"><a href="#cb61-11" aria-hidden="true" tabindex="-1"></a>data_training <span class="ot">&lt;-</span> <span class="fu">training</span>(split_data)</span>
+<span id="cb61-12"><a href="#cb61-12" aria-hidden="true" tabindex="-1"></a>data_testing <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_data)</span>
+<span id="cb61-13"><a href="#cb61-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-14"><a href="#cb61-14" aria-hidden="true" tabindex="-1"></a><span class="co"># lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  </span></span>
+<span id="cb61-15"><a href="#cb61-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb61-16"><a href="#cb61-16" aria-hidden="true" tabindex="-1"></a>data_training <span class="sc">|&gt;</span> </span>
+<span id="cb61-17"><a href="#cb61-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
+<span id="cb61-18"><a href="#cb61-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
+<span id="cb61-19"><a href="#cb61-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_training) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 3
   Performance_i count percent
@@ -640,10 +685,10 @@ id:         1</code></pre>
 2 Average        4260  10.6  
 3 High          35645  89.1  </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb61"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a>data_testing <span class="sc">|&gt;</span> </span>
-<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
-<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
-<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_testing) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a>data_testing <span class="sc">|&gt;</span> </span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_testing) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 3
   Performance_i count percent
@@ -652,13 +697,13 @@ id:         1</code></pre>
 2 Average        4253   10.6 
 3 High          35643   89.1 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb63"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The recipe sets up what data we are going to use and how it to be treated before doing the modeling.</span></span>
-<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>memory_recipe <span class="ot">&lt;-</span></span>
-<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recipe</span>( Performance_i <span class="sc">~</span> age <span class="sc">+</span> sleep_duration_hrs <span class="sc">+</span> sleep_quality_score <span class="sc">+</span> cardio_mins_wk <span class="sc">+</span> water_intake_liters <span class="sc">+</span> screen_time_recreational_hrs <span class="sc">+</span> social_media_hrs <span class="sc">+</span> blood_pressure_sys <span class="sc">+</span> diet_ultra_processed_pct <span class="sc">+</span> diet_omega3_freq <span class="sc">+</span> alcohol_drinks_wk <span class="sc">+</span> novel_learning_hrs_wk <span class="sc">+</span> social_connection_score <span class="sc">+</span> chronic_stress_score <span class="sc">+</span> Never_smoke <span class="sc">+</span> Former_smoke <span class="sc">+</span> Current_smoke, <span class="at">data =</span> data_final) <span class="sc">|&gt;</span></span>
-<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_naomit</span>(<span class="fu">all_predictors</span>()) <span class="sc">|&gt;</span> </span>
-<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_predictors</span>()) </span>
-<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>memory_recipe</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb65"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The recipe sets up what data we are going to use and how it to be treated before doing the modeling.</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>memory_recipe <span class="ot">&lt;-</span></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recipe</span>( Performance_i <span class="sc">~</span> age <span class="sc">+</span> sleep_duration_hrs <span class="sc">+</span> sleep_quality_score <span class="sc">+</span> cardio_mins_wk <span class="sc">+</span> water_intake_liters <span class="sc">+</span> screen_time_recreational_hrs <span class="sc">+</span> social_media_hrs <span class="sc">+</span> blood_pressure_sys <span class="sc">+</span> diet_ultra_processed_pct <span class="sc">+</span> diet_omega3_freq <span class="sc">+</span> alcohol_drinks_wk <span class="sc">+</span> novel_learning_hrs_wk <span class="sc">+</span> social_connection_score <span class="sc">+</span> chronic_stress_score <span class="sc">+</span> Never_smoke <span class="sc">+</span> Former_smoke <span class="sc">+</span> Current_smoke, <span class="at">data =</span> data_final) <span class="sc">|&gt;</span></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_naomit</span>(<span class="fu">all_predictors</span>()) <span class="sc">|&gt;</span> </span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_predictors</span>()) </span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>memory_recipe</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
 </div>
@@ -690,9 +735,9 @@ predictor: 17</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>• Centering and scaling for: all_predictors()</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb74"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The prep step pulls in all the variables from the recipe based on the dataset we give it. </span></span>
-<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>data_prep <span class="ot">&lt;-</span> <span class="fu">prep</span>(memory_recipe, data_training)</span>
-<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>data_prep</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb76"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The prep step pulls in all the variables from the recipe based on the dataset we give it. </span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>data_prep <span class="ot">&lt;-</span> <span class="fu">prep</span>(memory_recipe, data_training)</span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>data_prep</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
 </div>
@@ -733,9 +778,9 @@ predictor: 17</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>• Centering and scaling for: age sleep_duration_hrs, ... | Trained</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb88"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb88-1"><a href="#cb88-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the bake steps preforms the prep steps and in this case normalizes all the data.</span></span>
-<span id="cb88-2"><a href="#cb88-2" aria-hidden="true" tabindex="-1"></a>data_bake <span class="ot">&lt;-</span> <span class="fu">bake</span>(data_prep, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span>
-<span id="cb88-3"><a href="#cb88-3" aria-hidden="true" tabindex="-1"></a>data_bake</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the bake steps preforms the prep steps and in this case normalizes all the data.</span></span>
+<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>data_bake <span class="ot">&lt;-</span> <span class="fu">bake</span>(data_prep, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span>
+<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>data_bake</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 40,000 × 18
        age sleep_duration_hrs sleep_quality_score cardio_mins_wk
@@ -759,39 +804,40 @@ predictor: 17</code></pre>
 #   chronic_stress_score &lt;dbl&gt;, Never_smoke &lt;dbl&gt;, Former_smoke &lt;dbl&gt;, …</code></pre>
 </div>
 </div>
+<p>Running random forest. Set mode “classification” for our discrete outcome (cognitive performance), engine “ranger”, importance “impurity”, 17 predictors, trees are set to 1000.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb90"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb90-1"><a href="#cb90-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 1 Random Forest</span></span>
-<span id="cb90-2"><a href="#cb90-2" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> </span>
-<span id="cb90-3"><a href="#cb90-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb90-4"><a href="#cb90-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify model</span></span>
-<span id="cb90-5"><a href="#cb90-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand_forest</span>() <span class="sc">|&gt;</span></span>
-<span id="cb90-6"><a href="#cb90-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb90-7"><a href="#cb90-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
-<span id="cb90-8"><a href="#cb90-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb90-9"><a href="#cb90-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb90-10"><a href="#cb90-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># engine/package that underlies the model (ranger is default)</span></span>
-<span id="cb90-11"><a href="#cb90-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">importance =</span> <span class="st">"impurity"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb90-12"><a href="#cb90-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb90-13"><a href="#cb90-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># we only have 4 predictors so mtry can't be more than 4</span></span>
-<span id="cb90-14"><a href="#cb90-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_args</span>(<span class="at">mtry =</span> <span class="dv">17</span>, <span class="at">trees =</span> <span class="dv">1000</span>)</span>
-<span id="cb90-15"><a href="#cb90-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb90-16"><a href="#cb90-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-17"><a href="#cb90-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
-<span id="cb90-18"><a href="#cb90-18" aria-hidden="true" tabindex="-1"></a>rf_wflow <span class="ot">&lt;-</span> </span>
-<span id="cb90-19"><a href="#cb90-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb90-20"><a href="#cb90-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe) <span class="sc">|&gt;</span></span>
-<span id="cb90-21"><a href="#cb90-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_model)</span>
-<span id="cb90-22"><a href="#cb90-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-23"><a href="#cb90-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-24"><a href="#cb90-24" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
-<span id="cb90-25"><a href="#cb90-25" aria-hidden="true" tabindex="-1"></a>rf_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(rf_wflow, data_training)</span>
-<span id="cb90-26"><a href="#cb90-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-27"><a href="#cb90-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Test the importance of the variables</span></span>
-<span id="cb90-28"><a href="#cb90-28" aria-hidden="true" tabindex="-1"></a>rf_engine <span class="ot">&lt;-</span> <span class="fu">extract_fit_engine</span>(rf_fit)</span>
-<span id="cb90-29"><a href="#cb90-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-30"><a href="#cb90-30" aria-hidden="true" tabindex="-1"></a>rf_importance <span class="ot">&lt;-</span> rf_engine<span class="sc">$</span>variable.importance</span>
-<span id="cb90-31"><a href="#cb90-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb90-32"><a href="#cb90-32" aria-hidden="true" tabindex="-1"></a>rf_importance</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 1 Random Forest</span></span>
+<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>rf_model <span class="ot">&lt;-</span> </span>
+<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify model</span></span>
+<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand_forest</span>() <span class="sc">|&gt;</span></span>
+<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
+<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># engine/package that underlies the model (ranger is default)</span></span>
+<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">importance =</span> <span class="st">"impurity"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb92-12"><a href="#cb92-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb92-13"><a href="#cb92-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># 17 predictors</span></span>
+<span id="cb92-14"><a href="#cb92-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_args</span>(<span class="at">mtry =</span> <span class="dv">17</span>, <span class="at">trees =</span> <span class="dv">1000</span>)</span>
+<span id="cb92-15"><a href="#cb92-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb92-16"><a href="#cb92-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-17"><a href="#cb92-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
+<span id="cb92-18"><a href="#cb92-18" aria-hidden="true" tabindex="-1"></a>rf_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb92-19"><a href="#cb92-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb92-20"><a href="#cb92-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe) <span class="sc">|&gt;</span></span>
+<span id="cb92-21"><a href="#cb92-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_model)</span>
+<span id="cb92-22"><a href="#cb92-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-23"><a href="#cb92-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-24"><a href="#cb92-24" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
+<span id="cb92-25"><a href="#cb92-25" aria-hidden="true" tabindex="-1"></a>rf_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(rf_wflow, data_training)</span>
+<span id="cb92-26"><a href="#cb92-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-27"><a href="#cb92-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Test the importance of the variables</span></span>
+<span id="cb92-28"><a href="#cb92-28" aria-hidden="true" tabindex="-1"></a>rf_engine <span class="ot">&lt;-</span> <span class="fu">extract_fit_engine</span>(rf_fit)</span>
+<span id="cb92-29"><a href="#cb92-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-30"><a href="#cb92-30" aria-hidden="true" tabindex="-1"></a>rf_importance <span class="ot">&lt;-</span> rf_engine<span class="sc">$</span>variable.importance</span>
+<span id="cb92-31"><a href="#cb92-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb92-32"><a href="#cb92-32" aria-hidden="true" tabindex="-1"></a>rf_importance</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>                         age           sleep_duration_hrs 
                   1422.17082                    340.60554 
@@ -812,42 +858,65 @@ predictor: 17</code></pre>
                Current_smoke 
                    300.74555 </code></pre>
 </div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb94"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb94-1"><a href="#cb94-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rank</span>(rf_importance)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>                         age           sleep_duration_hrs 
+                          17                           11 
+         sleep_quality_score               cardio_mins_wk 
+                           5                           15 
+         water_intake_liters screen_time_recreational_hrs 
+                           7                           10 
+            social_media_hrs           blood_pressure_sys 
+                           9                           12 
+    diet_ultra_processed_pct             diet_omega3_freq 
+                          16                            3 
+           alcohol_drinks_wk        novel_learning_hrs_wk 
+                           4                           14 
+     social_connection_score         chronic_stress_score 
+                           6                           13 
+                 Never_smoke                 Former_smoke 
+                           2                            1 
+               Current_smoke 
+                           8 </code></pre>
 </div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb92"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb92-1"><a href="#cb92-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Logistic Regression</span></span>
-<span id="cb92-2"><a href="#cb92-2" aria-hidden="true" tabindex="-1"></a>lr_model <span class="ot">&lt;-</span> </span>
-<span id="cb92-3"><a href="#cb92-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb92-4"><a href="#cb92-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify that the model is a multinom_reg</span></span>
-<span id="cb92-5"><a href="#cb92-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">multinom_reg</span>() <span class="sc">|&gt;</span></span>
-<span id="cb92-6"><a href="#cb92-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb92-7"><a href="#cb92-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
-<span id="cb92-8"><a href="#cb92-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb92-9"><a href="#cb92-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb92-10"><a href="#cb92-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select the engine/package that underlies the model (nnet is default)</span></span>
-<span id="cb92-11"><a href="#cb92-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"nnet"</span>)</span>
-<span id="cb92-12"><a href="#cb92-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb92-13"><a href="#cb92-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb92-14"><a href="#cb92-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
-<span id="cb92-15"><a href="#cb92-15" aria-hidden="true" tabindex="-1"></a>lr_wflow <span class="ot">&lt;-</span> </span>
-<span id="cb92-16"><a href="#cb92-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb92-17"><a href="#cb92-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe) <span class="sc">|&gt;</span></span>
-<span id="cb92-18"><a href="#cb92-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(lr_model)</span>
-<span id="cb92-19"><a href="#cb92-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb92-20"><a href="#cb92-20" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
-<span id="cb92-21"><a href="#cb92-21" aria-hidden="true" tabindex="-1"></a>lr_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(lr_wflow, data_training)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
+<p>Here we see that age shows the highest importance, followed by diet_ultra_processed_pct, cardio_mins_wk, novel_learning_hrs_wk, and chronic_stress_score. Let’s continue with linear regression model.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb93"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb93-1"><a href="#cb93-1" aria-hidden="true" tabindex="-1"></a><span class="co"># predict the species of the testing data we held back for each model</span></span>
-<span id="cb93-2"><a href="#cb93-2" aria-hidden="true" tabindex="-1"></a>rf.predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_fit, data_testing)</span>
-<span id="cb93-3"><a href="#cb93-3" aria-hidden="true" tabindex="-1"></a>lr.predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(lr_fit, data_testing)</span>
-<span id="cb93-4"><a href="#cb93-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb93-5"><a href="#cb93-5" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
-<span id="cb93-6"><a href="#cb93-6" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="ot">&lt;-</span> rf.predict <span class="sc">%&gt;%</span></span>
-<span id="cb93-7"><a href="#cb93-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
-<span id="cb93-8"><a href="#cb93-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing<span class="sc">$</span>Performance)</span>
-<span id="cb93-9"><a href="#cb93-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb93-10"><a href="#cb93-10" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
-<span id="cb93-11"><a href="#cb93-11" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Logistic Regression</span></span>
+<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>lr_model <span class="ot">&lt;-</span> </span>
+<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify that the model is a multinom_reg</span></span>
+<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">multinom_reg</span>() <span class="sc">|&gt;</span></span>
+<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
+<span id="cb96-8"><a href="#cb96-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb96-9"><a href="#cb96-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb96-10"><a href="#cb96-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select the engine/package that underlies the model (nnet is default)</span></span>
+<span id="cb96-11"><a href="#cb96-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"nnet"</span>)</span>
+<span id="cb96-12"><a href="#cb96-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb96-13"><a href="#cb96-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb96-14"><a href="#cb96-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
+<span id="cb96-15"><a href="#cb96-15" aria-hidden="true" tabindex="-1"></a>lr_wflow <span class="ot">&lt;-</span> </span>
+<span id="cb96-16"><a href="#cb96-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb96-17"><a href="#cb96-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe) <span class="sc">|&gt;</span></span>
+<span id="cb96-18"><a href="#cb96-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(lr_model)</span>
+<span id="cb96-19"><a href="#cb96-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb96-20"><a href="#cb96-20" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
+<span id="cb96-21"><a href="#cb96-21" aria-hidden="true" tabindex="-1"></a>lr_fit <span class="ot">&lt;-</span> <span class="fu">fit</span>(lr_wflow, data_training)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>Now that we finish training our models, let’s test them.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb97"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb97-1"><a href="#cb97-1" aria-hidden="true" tabindex="-1"></a><span class="co"># predict the species of the testing data we held back for each model</span></span>
+<span id="cb97-2"><a href="#cb97-2" aria-hidden="true" tabindex="-1"></a>rf.predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_fit, data_testing)</span>
+<span id="cb97-3"><a href="#cb97-3" aria-hidden="true" tabindex="-1"></a>lr.predict <span class="ot">&lt;-</span> <span class="fu">predict</span>(lr_fit, data_testing)</span>
+<span id="cb97-4"><a href="#cb97-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-5"><a href="#cb97-5" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
+<span id="cb97-6"><a href="#cb97-6" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="ot">&lt;-</span> rf.predict <span class="sc">%&gt;%</span></span>
+<span id="cb97-7"><a href="#cb97-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
+<span id="cb97-8"><a href="#cb97-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing<span class="sc">$</span>Performance)</span>
+<span id="cb97-9"><a href="#cb97-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb97-10"><a href="#cb97-10" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
+<span id="cb97-11"><a href="#cb97-11" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          Truth
 Prediction   Low Average  High
@@ -855,8 +924,8 @@ Prediction   Low Average  High
    Average     6    1612  2635
    High        0     742 34901</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb95"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb95-1"><a href="#cb95-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(rf.outcome, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
-<span id="cb95-2"><a href="#cb95-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"random forest"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(rf.outcome, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
+<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"random forest"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -864,28 +933,28 @@ Prediction   Low Average  High
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb96"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb96-1"><a href="#cb96-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
-<span id="cb96-2"><a href="#cb96-2" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> rf.acc</span>
-<span id="cb96-3"><a href="#cb96-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-4"><a href="#cb96-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
-<span id="cb96-5"><a href="#cb96-5" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> rf.spec</span>
-<span id="cb96-6"><a href="#cb96-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-7"><a href="#cb96-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
-<span id="cb96-8"><a href="#cb96-8" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> rf.sens</span>
-<span id="cb96-9"><a href="#cb96-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-10"><a href="#cb96-10" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
-<span id="cb96-11"><a href="#cb96-11" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> rf.prec</span>
-<span id="cb96-12"><a href="#cb96-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-13"><a href="#cb96-13" aria-hidden="true" tabindex="-1"></a>rf.eval <span class="ot">&lt;-</span> <span class="fu">c</span>(rf.acc<span class="sc">$</span>.estimate, rf.spec<span class="sc">$</span>.estimate, rf.sens<span class="sc">$</span>.estimate, rf.prec<span class="sc">$</span>.estimate)</span>
-<span id="cb96-14"><a href="#cb96-14" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rf.eval) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
-<span id="cb96-15"><a href="#cb96-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-16"><a href="#cb96-16" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
-<span id="cb96-17"><a href="#cb96-17" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="ot">&lt;-</span> lr.predict <span class="sc">%&gt;%</span></span>
-<span id="cb96-18"><a href="#cb96-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
-<span id="cb96-19"><a href="#cb96-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing<span class="sc">$</span>Performance_i)</span>
-<span id="cb96-20"><a href="#cb96-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb96-21"><a href="#cb96-21" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
-<span id="cb96-22"><a href="#cb96-22" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb100"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb100-1"><a href="#cb100-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
+<span id="cb100-2"><a href="#cb100-2" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> rf.acc</span>
+<span id="cb100-3"><a href="#cb100-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-4"><a href="#cb100-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
+<span id="cb100-5"><a href="#cb100-5" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> rf.spec</span>
+<span id="cb100-6"><a href="#cb100-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-7"><a href="#cb100-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
+<span id="cb100-8"><a href="#cb100-8" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> rf.sens</span>
+<span id="cb100-9"><a href="#cb100-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-10"><a href="#cb100-10" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
+<span id="cb100-11"><a href="#cb100-11" aria-hidden="true" tabindex="-1"></a>rf.outcome <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> rf.prec</span>
+<span id="cb100-12"><a href="#cb100-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-13"><a href="#cb100-13" aria-hidden="true" tabindex="-1"></a>rf.eval <span class="ot">&lt;-</span> <span class="fu">c</span>(rf.acc<span class="sc">$</span>.estimate, rf.spec<span class="sc">$</span>.estimate, rf.sens<span class="sc">$</span>.estimate, rf.prec<span class="sc">$</span>.estimate)</span>
+<span id="cb100-14"><a href="#cb100-14" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rf.eval) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
+<span id="cb100-15"><a href="#cb100-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-16"><a href="#cb100-16" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
+<span id="cb100-17"><a href="#cb100-17" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="ot">&lt;-</span> lr.predict <span class="sc">%&gt;%</span></span>
+<span id="cb100-18"><a href="#cb100-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
+<span id="cb100-19"><a href="#cb100-19" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing<span class="sc">$</span>Performance_i)</span>
+<span id="cb100-20"><a href="#cb100-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb100-21"><a href="#cb100-21" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
+<span id="cb100-22"><a href="#cb100-22" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          Truth
 Prediction   Low Average  High
@@ -893,8 +962,8 @@ Prediction   Low Average  High
    Average    17    1213  3023
    High        0     692 34951</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb98"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb98-1"><a href="#cb98-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(lr.outcome, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
-<span id="cb98-2"><a href="#cb98-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"logistic regression"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(lr.outcome, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
+<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"logistic regression"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -902,129 +971,96 @@ Prediction   Low Average  High
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb99"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb99-1"><a href="#cb99-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
-<span id="cb99-2"><a href="#cb99-2" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> lr.acc</span>
-<span id="cb99-3"><a href="#cb99-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-4"><a href="#cb99-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
-<span id="cb99-5"><a href="#cb99-5" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> lr.spec</span>
-<span id="cb99-6"><a href="#cb99-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-7"><a href="#cb99-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
-<span id="cb99-8"><a href="#cb99-8" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> lr.sens</span>
-<span id="cb99-9"><a href="#cb99-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-10"><a href="#cb99-10" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
-<span id="cb99-11"><a href="#cb99-11" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> lr.prec</span>
-<span id="cb99-12"><a href="#cb99-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-13"><a href="#cb99-13" aria-hidden="true" tabindex="-1"></a>lr.eval <span class="ot">=</span> <span class="fu">c</span>(lr.acc<span class="sc">$</span>.estimate, lr.spec<span class="sc">$</span>.estimate, lr.sens<span class="sc">$</span>.estimate, lr.prec<span class="sc">$</span>.estimate)</span>
-<span id="cb99-14"><a href="#cb99-14" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lr.eval) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
-<span id="cb99-15"><a href="#cb99-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb99-16"><a href="#cb99-16" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(rf.eval, lr.eval)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb103"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb103-1"><a href="#cb103-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
+<span id="cb103-2"><a href="#cb103-2" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> lr.acc</span>
+<span id="cb103-3"><a href="#cb103-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-4"><a href="#cb103-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
+<span id="cb103-5"><a href="#cb103-5" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> lr.spec</span>
+<span id="cb103-6"><a href="#cb103-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-7"><a href="#cb103-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
+<span id="cb103-8"><a href="#cb103-8" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> lr.sens</span>
+<span id="cb103-9"><a href="#cb103-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-10"><a href="#cb103-10" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
+<span id="cb103-11"><a href="#cb103-11" aria-hidden="true" tabindex="-1"></a>lr.outcome <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> lr.prec</span>
+<span id="cb103-12"><a href="#cb103-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-13"><a href="#cb103-13" aria-hidden="true" tabindex="-1"></a>lr.eval <span class="ot">=</span> <span class="fu">c</span>(lr.acc<span class="sc">$</span>.estimate, lr.spec<span class="sc">$</span>.estimate, lr.sens<span class="sc">$</span>.estimate, lr.prec<span class="sc">$</span>.estimate)</span>
+<span id="cb103-14"><a href="#cb103-14" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lr.eval) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
+<span id="cb103-15"><a href="#cb103-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb103-16"><a href="#cb103-16" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(rf.eval, lr.eval)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>        accuracy specificity sensitivity precision
 rf.eval 0.913125   0.8754124   0.7518342 0.4911979
 lr.eval 0.904950   0.8583558   0.7347067 0.5309063</code></pre>
 </div>
 </div>
-<table class="caption-top table">
-<thead>
-<tr class="header">
-<th></th>
-<th>accuracy</th>
-<th>specificity</th>
-<th>sensitivity</th>
-<th>precision</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td>rf.eval</td>
-<td>0.9104</td>
-<td>0.8770378</td>
-<td>0.7510783</td>
-<td>0.4693407</td>
-</tr>
-<tr class="even">
-<td>lr.eval</td>
-<td>0.9048</td>
-<td>0.8686475</td>
-<td>0.7324793</td>
-<td>0.5021380</td>
-</tr>
-</tbody>
-</table>
 <p>What if we group age together.</p>
+</section>
+<section id="age-grouped-rf-lr" class="level3">
+<h3 class="anchored" data-anchor-id="age-grouped-rf-lr">Age grouped rf &amp; lr</h3>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb101"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb101-1"><a href="#cb101-1" aria-hidden="true" tabindex="-1"></a><span class="co"># rf &amp; lr: Prepare the dataset</span></span>
-<span id="cb101-2"><a href="#cb101-2" aria-hidden="true" tabindex="-1"></a>age_grouped_data <span class="ot">&lt;-</span> grouped_data <span class="sc">|&gt;</span> </span>
-<span id="cb101-3"><a href="#cb101-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">age_group =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
-<span id="cb101-4"><a href="#cb101-4" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">18</span> <span class="sc">&amp;</span> age <span class="sc">&lt;</span> <span class="dv">40</span> <span class="sc">~</span> <span class="st">"Younger adults"</span>,</span>
-<span id="cb101-5"><a href="#cb101-5" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">40</span> <span class="sc">&amp;</span> age <span class="sc">&lt;</span> <span class="dv">65</span> <span class="sc">~</span> <span class="st">"Middle-aged adults"</span>,</span>
-<span id="cb101-6"><a href="#cb101-6" aria-hidden="true" tabindex="-1"></a>  age <span class="sc">&gt;=</span> <span class="dv">65</span> <span class="sc">&amp;</span> age <span class="sc">&lt;=</span><span class="dv">90</span> <span class="sc">~</span> <span class="st">"Older adults"</span>),</span>
-<span id="cb101-7"><a href="#cb101-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Younger adults"</span>, <span class="st">"Middle-aged adults"</span>, <span class="st">"Older adults"</span>),</span>
-<span id="cb101-8"><a href="#cb101-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">ordered =</span> <span class="cn">TRUE</span>)</span>
-<span id="cb101-9"><a href="#cb101-9" aria-hidden="true" tabindex="-1"></a>  )</span>
-<span id="cb101-10"><a href="#cb101-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb101-11"><a href="#cb101-11" aria-hidden="true" tabindex="-1"></a>cleaned_data <span class="ot">&lt;-</span> age_grouped_data <span class="sc">|&gt;</span></span>
-<span id="cb101-12"><a href="#cb101-12" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Younger_adults =</span> <span class="fu">case_when</span>(</span>
-<span id="cb101-13"><a href="#cb101-13" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Younger adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb101-14"><a href="#cb101-14" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Younger adults"</span> <span class="sc">~</span> <span class="dv">0</span>),</span>
-<span id="cb101-15"><a href="#cb101-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb101-16"><a href="#cb101-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">Middle_aged_adults =</span> <span class="fu">case_when</span>(</span>
-<span id="cb101-17"><a href="#cb101-17" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Middle_aged adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb101-18"><a href="#cb101-18" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Middle_aged adults"</span> <span class="sc">~</span> <span class="dv">0</span>),</span>
-<span id="cb101-19"><a href="#cb101-19" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb101-20"><a href="#cb101-20" aria-hidden="true" tabindex="-1"></a>    <span class="at">Older_adults =</span> <span class="fu">case_when</span>(</span>
-<span id="cb101-21"><a href="#cb101-21" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Older adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
-<span id="cb101-22"><a href="#cb101-22" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Older adults"</span> <span class="sc">~</span> <span class="dv">0</span>))</span>
-<span id="cb101-23"><a href="#cb101-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb101-24"><a href="#cb101-24" aria-hidden="true" tabindex="-1"></a>data_i2 <span class="ot">&lt;-</span> <span class="fu">subset</span>(cleaned_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(smoking_status, cognitive_assessment_score, age, age_group) )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb105"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb105-1"><a href="#cb105-1" aria-hidden="true" tabindex="-1"></a><span class="co"># rf &amp; lr: Prepare the dataset</span></span>
+<span id="cb105-2"><a href="#cb105-2" aria-hidden="true" tabindex="-1"></a>cleaned_data <span class="ot">&lt;-</span> age_grouped_data <span class="sc">|&gt;</span></span>
+<span id="cb105-3"><a href="#cb105-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Younger_adults =</span> <span class="fu">case_when</span>(</span>
+<span id="cb105-4"><a href="#cb105-4" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Younger adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb105-5"><a href="#cb105-5" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Younger adults"</span> <span class="sc">~</span> <span class="dv">0</span>),</span>
+<span id="cb105-6"><a href="#cb105-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb105-7"><a href="#cb105-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">Middle_aged_adults =</span> <span class="fu">case_when</span>(</span>
+<span id="cb105-8"><a href="#cb105-8" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Middle_aged adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb105-9"><a href="#cb105-9" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Middle_aged adults"</span> <span class="sc">~</span> <span class="dv">0</span>),</span>
+<span id="cb105-10"><a href="#cb105-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb105-11"><a href="#cb105-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">Older_adults =</span> <span class="fu">case_when</span>(</span>
+<span id="cb105-12"><a href="#cb105-12" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">==</span> <span class="st">"Older adults"</span> <span class="sc">~</span> <span class="dv">1</span>,</span>
+<span id="cb105-13"><a href="#cb105-13" aria-hidden="true" tabindex="-1"></a>    age_group <span class="sc">!=</span> <span class="st">"Older adults"</span> <span class="sc">~</span> <span class="dv">0</span>))</span>
+<span id="cb105-14"><a href="#cb105-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb105-15"><a href="#cb105-15" aria-hidden="true" tabindex="-1"></a>data_i2 <span class="ot">&lt;-</span> <span class="fu">subset</span>(cleaned_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(smoking_status, cognitive_assessment_score, age, age_group) )</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb102"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb102-1"><a href="#cb102-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set a seed in order to make the analysis reproducible.</span></span>
-<span id="cb102-2"><a href="#cb102-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">666</span>)</span>
-<span id="cb102-3"><a href="#cb102-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-4"><a href="#cb102-4" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.</span></span>
-<span id="cb102-5"><a href="#cb102-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-6"><a href="#cb102-6" aria-hidden="true" tabindex="-1"></a>data_final2 <span class="ot">&lt;-</span> data_i2 <span class="sc">|&gt;</span></span>
-<span id="cb102-7"><a href="#cb102-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span> <span class="dv">80000</span>)</span>
-<span id="cb102-8"><a href="#cb102-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-9"><a href="#cb102-9" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. </span></span>
-<span id="cb102-10"><a href="#cb102-10" aria-hidden="true" tabindex="-1"></a>split_data2 <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(data_final2, <span class="at">prop=</span><span class="dv">2</span><span class="sc">/</span><span class="dv">3</span>, <span class="at">strata =</span> Performance_i)</span>
-<span id="cb102-11"><a href="#cb102-11" aria-hidden="true" tabindex="-1"></a>data_training2 <span class="ot">&lt;-</span> <span class="fu">training</span>(split_data2)</span>
-<span id="cb102-12"><a href="#cb102-12" aria-hidden="true" tabindex="-1"></a>data_testing2 <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_data2)</span>
-<span id="cb102-13"><a href="#cb102-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-14"><a href="#cb102-14" aria-hidden="true" tabindex="-1"></a><span class="co"># lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  </span></span>
-<span id="cb102-15"><a href="#cb102-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-16"><a href="#cb102-16" aria-hidden="true" tabindex="-1"></a>data_training2 <span class="sc">|&gt;</span> </span>
-<span id="cb102-17"><a href="#cb102-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
-<span id="cb102-18"><a href="#cb102-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
-<span id="cb102-19"><a href="#cb102-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_training2) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="co"># set a seed in order to make the analysis reproducible.</span></span>
+<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">666</span>)</span>
+<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.</span></span>
+<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a>data_final2 <span class="ot">&lt;-</span> data_i2 <span class="sc">|&gt;</span></span>
+<span id="cb106-7"><a href="#cb106-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">slice_sample</span>(<span class="at">n=</span> <span class="dv">80000</span>)</span>
+<span id="cb106-8"><a href="#cb106-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-9"><a href="#cb106-9" aria-hidden="true" tabindex="-1"></a><span class="co"># split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. </span></span>
+<span id="cb106-10"><a href="#cb106-10" aria-hidden="true" tabindex="-1"></a>split_data2 <span class="ot">&lt;-</span> <span class="fu">initial_split</span>(data_final2, <span class="at">prop=</span><span class="dv">1</span><span class="sc">/</span><span class="dv">2</span>, <span class="at">strata =</span> Performance_i)</span>
+<span id="cb106-11"><a href="#cb106-11" aria-hidden="true" tabindex="-1"></a>data_training2 <span class="ot">&lt;-</span> <span class="fu">training</span>(split_data2)</span>
+<span id="cb106-12"><a href="#cb106-12" aria-hidden="true" tabindex="-1"></a>data_testing2 <span class="ot">&lt;-</span> <span class="fu">testing</span>(split_data2)</span>
+<span id="cb106-13"><a href="#cb106-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-14"><a href="#cb106-14" aria-hidden="true" tabindex="-1"></a><span class="co"># lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  </span></span>
+<span id="cb106-15"><a href="#cb106-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb106-16"><a href="#cb106-16" aria-hidden="true" tabindex="-1"></a>data_training2 <span class="sc">|&gt;</span> </span>
+<span id="cb106-17"><a href="#cb106-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
+<span id="cb106-18"><a href="#cb106-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
+<span id="cb106-19"><a href="#cb106-19" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_training2) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 3
   Performance_i count percent
   &lt;ord&gt;         &lt;int&gt;   &lt;dbl&gt;
-1 Low             123   0.231
-2 Average        5678  10.6  
-3 High          47532  89.1  </code></pre>
+1 Low              95   0.238
+2 Average        4260  10.6  
+3 High          35645  89.1  </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb104"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb104-1"><a href="#cb104-1" aria-hidden="true" tabindex="-1"></a>data_testing2 <span class="sc">|&gt;</span> </span>
-<span id="cb104-2"><a href="#cb104-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
-<span id="cb104-3"><a href="#cb104-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
-<span id="cb104-4"><a href="#cb104-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_testing2) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb108"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb108-1"><a href="#cb108-1" aria-hidden="true" tabindex="-1"></a>data_testing2 <span class="sc">|&gt;</span> </span>
+<span id="cb108-2"><a href="#cb108-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">group_by</span>(Performance_i) <span class="sc">|&gt;</span></span>
+<span id="cb108-3"><a href="#cb108-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">summarise</span>( <span class="at">count =</span> <span class="fu">n</span>(),</span>
+<span id="cb108-4"><a href="#cb108-4" aria-hidden="true" tabindex="-1"></a>             <span class="at">percent =</span> <span class="fu">n</span>()<span class="sc">/</span><span class="fu">nrow</span>(data_testing2) <span class="sc">*</span> <span class="dv">100</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code># A tibble: 3 × 3
   Performance_i count percent
   &lt;ord&gt;         &lt;int&gt;   &lt;dbl&gt;
-1 Low              76   0.285
-2 Average        2835  10.6  
-3 High          23756  89.1  </code></pre>
+1 Low             104    0.26
+2 Average        4253   10.6 
+3 High          35643   89.1 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb106"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb106-1"><a href="#cb106-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The recipe sets up what data we are going to use and how it to be treated before doing the modeling.</span></span>
-<span id="cb106-2"><a href="#cb106-2" aria-hidden="true" tabindex="-1"></a>memory_recipe2 <span class="ot">&lt;-</span></span>
-<span id="cb106-3"><a href="#cb106-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recipe</span>( Performance_i <span class="sc">~</span> sleep_duration_hrs <span class="sc">+</span> sleep_quality_score <span class="sc">+</span> cardio_mins_wk <span class="sc">+</span> water_intake_liters <span class="sc">+</span> screen_time_recreational_hrs <span class="sc">+</span> social_media_hrs <span class="sc">+</span> blood_pressure_sys <span class="sc">+</span> diet_ultra_processed_pct <span class="sc">+</span> diet_omega3_freq <span class="sc">+</span> alcohol_drinks_wk <span class="sc">+</span> novel_learning_hrs_wk <span class="sc">+</span> social_connection_score <span class="sc">+</span> chronic_stress_score <span class="sc">+</span> Never_smoke <span class="sc">+</span> Former_smoke <span class="sc">+</span> Current_smoke <span class="sc">+</span> Younger_adults <span class="sc">+</span> Middle_aged_adults <span class="sc">+</span> Older_adults , <span class="at">data =</span> data_final2) <span class="sc">|&gt;</span></span>
-<span id="cb106-4"><a href="#cb106-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_naomit</span>(<span class="fu">all_predictors</span>()) <span class="sc">|&gt;</span> </span>
-<span id="cb106-5"><a href="#cb106-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_predictors</span>()) </span>
-<span id="cb106-6"><a href="#cb106-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb106-7"><a href="#cb106-7" aria-hidden="true" tabindex="-1"></a>memory_recipe2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb110"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb110-1"><a href="#cb110-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The recipe sets up what data we are going to use and how it to be treated before doing the modeling.</span></span>
+<span id="cb110-2"><a href="#cb110-2" aria-hidden="true" tabindex="-1"></a>memory_recipe2 <span class="ot">&lt;-</span></span>
+<span id="cb110-3"><a href="#cb110-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">recipe</span>( Performance_i <span class="sc">~</span> sleep_duration_hrs <span class="sc">+</span> sleep_quality_score <span class="sc">+</span> cardio_mins_wk <span class="sc">+</span> water_intake_liters <span class="sc">+</span> screen_time_recreational_hrs <span class="sc">+</span> social_media_hrs <span class="sc">+</span> blood_pressure_sys <span class="sc">+</span> diet_ultra_processed_pct <span class="sc">+</span> diet_omega3_freq <span class="sc">+</span> alcohol_drinks_wk <span class="sc">+</span> novel_learning_hrs_wk <span class="sc">+</span> social_connection_score <span class="sc">+</span> chronic_stress_score <span class="sc">+</span> Never_smoke <span class="sc">+</span> Former_smoke <span class="sc">+</span> Current_smoke <span class="sc">+</span> Younger_adults <span class="sc">+</span> Middle_aged_adults <span class="sc">+</span> Older_adults , <span class="at">data =</span> data_final2) <span class="sc">|&gt;</span></span>
+<span id="cb110-4"><a href="#cb110-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_naomit</span>(<span class="fu">all_predictors</span>()) <span class="sc">|&gt;</span> </span>
+<span id="cb110-5"><a href="#cb110-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">step_normalize</span>(<span class="fu">all_predictors</span>()) </span>
+<span id="cb110-6"><a href="#cb110-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb110-7"><a href="#cb110-7" aria-hidden="true" tabindex="-1"></a>memory_recipe2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
 </div>
@@ -1056,15 +1092,15 @@ predictor: 19</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>• Centering and scaling for: all_predictors()</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb117"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb117-1"><a href="#cb117-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The prep step pulls in all the variables from the recipe based on the dataset we give it. </span></span>
-<span id="cb117-2"><a href="#cb117-2" aria-hidden="true" tabindex="-1"></a>data_prep2 <span class="ot">&lt;-</span> <span class="fu">prep</span>(memory_recipe2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb121"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb121-1"><a href="#cb121-1" aria-hidden="true" tabindex="-1"></a><span class="co"># The prep step pulls in all the variables from the recipe based on the dataset we give it. </span></span>
+<span id="cb121-2"><a href="#cb121-2" aria-hidden="true" tabindex="-1"></a>data_prep2 <span class="ot">&lt;-</span> <span class="fu">prep</span>(memory_recipe2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: !  The following column has zero variance so scaling cannot be used:
   Middle_aged_adults.
 ℹ Consider using ?step_zv (`?recipes::step_zv()`) to remove those columns
   before normalizing.</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb119"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb119-1"><a href="#cb119-1" aria-hidden="true" tabindex="-1"></a>data_prep2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb123"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb123-1"><a href="#cb123-1" aria-hidden="true" tabindex="-1"></a>data_prep2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
 </div>
@@ -1091,7 +1127,7 @@ predictor: 19</code></pre>
 <pre><code>── Training information </code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
-<pre><code>Training data contained 53333 data points and no incomplete rows.</code></pre>
+<pre><code>Training data contained 40000 data points and no incomplete rows.</code></pre>
 </div>
 <div class="cell-output cell-output-stderr">
 <pre><code></code></pre>
@@ -1105,24 +1141,24 @@ predictor: 19</code></pre>
 <div class="cell-output cell-output-stderr">
 <pre><code>• Centering and scaling for: sleep_duration_hrs, ... | Trained</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb133"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb133-1"><a href="#cb133-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the bake steps preforms the prep steps and in this case normalizes all the data.</span></span>
-<span id="cb133-2"><a href="#cb133-2" aria-hidden="true" tabindex="-1"></a>data_bake2 <span class="ot">&lt;-</span> <span class="fu">bake</span>(data_prep2, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span>
-<span id="cb133-3"><a href="#cb133-3" aria-hidden="true" tabindex="-1"></a>data_bake2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># the bake steps preforms the prep steps and in this case normalizes all the data.</span></span>
+<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>data_bake2 <span class="ot">&lt;-</span> <span class="fu">bake</span>(data_prep2, <span class="at">new_data =</span> <span class="cn">NULL</span>)</span>
+<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a>data_bake2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code># A tibble: 53,333 × 20
+<pre><code># A tibble: 40,000 × 20
    sleep_duration_hrs sleep_quality_score cardio_mins_wk water_intake_liters
                 &lt;dbl&gt;               &lt;dbl&gt;          &lt;dbl&gt;               &lt;dbl&gt;
- 1            0.00246              -0.777         0.0979               1.01 
- 2           -0.828                -0.158        -0.326                0.174
- 3           -0.551                 1.08          0.349               -0.825
- 4            0.833                -0.777        -0.577               -1.32 
- 5            0.464                -0.777        -0.784                1.67 
- 6            0.464                 0.461        -0.698               -0.326
- 7           -0.182                -2.02         -0.706                1.01 
- 8           -0.367                -2.63         -0.542               -1.49 
- 9           -1.66                 -1.40         -0.758                0.673
-10           -0.459                -1.40         -0.559               -0.326
-# ℹ 53,323 more rows
+ 1            0.00392              -0.784          0.105               1.01 
+ 2           -0.827                -0.162         -0.321               0.172
+ 3           -0.550                 1.08           0.357              -0.829
+ 4            0.466                 0.460         -0.695              -0.329
+ 5           -0.365                -2.65          -0.539              -1.50 
+ 6           -1.66                 -1.41          -0.756               0.672
+ 7           -0.827                -0.784         -0.765              -1.50 
+ 8            0.00392               0.460         -0.304               0.339
+ 9            1.11                 -0.784         -0.182               0.672
+10           -1.84                  0.460          0.253              -0.662
+# ℹ 39,990 more rows
 # ℹ 16 more variables: screen_time_recreational_hrs &lt;dbl&gt;,
 #   social_media_hrs &lt;dbl&gt;, blood_pressure_sys &lt;dbl&gt;,
 #   diet_ultra_processed_pct &lt;dbl&gt;, diet_omega3_freq &lt;dbl&gt;,
@@ -1132,88 +1168,112 @@ predictor: 19</code></pre>
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb135"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb135-1"><a href="#cb135-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Random Forest</span></span>
-<span id="cb135-2"><a href="#cb135-2" aria-hidden="true" tabindex="-1"></a>rf_model2 <span class="ot">&lt;-</span> </span>
-<span id="cb135-3"><a href="#cb135-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb135-4"><a href="#cb135-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify model</span></span>
-<span id="cb135-5"><a href="#cb135-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand_forest</span>() <span class="sc">|&gt;</span></span>
-<span id="cb135-6"><a href="#cb135-6" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb135-7"><a href="#cb135-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
-<span id="cb135-8"><a href="#cb135-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb135-9"><a href="#cb135-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb135-10"><a href="#cb135-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># engine/package that underlies the model (ranger is default)</span></span>
-<span id="cb135-11"><a href="#cb135-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">importance =</span> <span class="st">"impurity"</span>) <span class="sc">|&gt;</span></span>
-<span id="cb135-12"><a href="#cb135-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb135-13"><a href="#cb135-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># we only have 4 predictors so mtry can't be more than 4</span></span>
-<span id="cb135-14"><a href="#cb135-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_args</span>(<span class="at">mtry =</span> <span class="dv">19</span>, <span class="at">trees =</span> <span class="dv">1000</span>)</span>
-<span id="cb135-15"><a href="#cb135-15" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb135-16"><a href="#cb135-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-17"><a href="#cb135-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
-<span id="cb135-18"><a href="#cb135-18" aria-hidden="true" tabindex="-1"></a>rf_wflow2 <span class="ot">&lt;-</span> </span>
-<span id="cb135-19"><a href="#cb135-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb135-20"><a href="#cb135-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe2) <span class="sc">|&gt;</span></span>
-<span id="cb135-21"><a href="#cb135-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_model2)</span>
-<span id="cb135-22"><a href="#cb135-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-23"><a href="#cb135-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb135-24"><a href="#cb135-24" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
-<span id="cb135-25"><a href="#cb135-25" aria-hidden="true" tabindex="-1"></a>rf_fit2 <span class="ot">&lt;-</span> <span class="fu">fit</span>(rf_wflow2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: !  The following column has zero variance so scaling cannot be used:
-  Middle_aged_adults.
-ℹ Consider using ?step_zv (`?recipes::step_zv()`) to remove those columns
-  before normalizing.</code></pre>
-</div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb137"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb137-1"><a href="#cb137-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test the importance of the variables</span></span>
-<span id="cb137-2"><a href="#cb137-2" aria-hidden="true" tabindex="-1"></a>rf_engine2 <span class="ot">&lt;-</span> <span class="fu">extract_fit_engine</span>(rf_fit2)</span>
-<span id="cb137-3"><a href="#cb137-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb137-4"><a href="#cb137-4" aria-hidden="true" tabindex="-1"></a>rf_importance2 <span class="ot">&lt;-</span> rf_engine2<span class="sc">$</span>variable.importance</span>
-<span id="cb137-5"><a href="#cb137-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb137-6"><a href="#cb137-6" aria-hidden="true" tabindex="-1"></a>rf_importance2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>          sleep_duration_hrs          sleep_quality_score 
-                   531.37326                    254.50065 
-              cardio_mins_wk          water_intake_liters 
-                  1091.74667                    468.74516 
-screen_time_recreational_hrs             social_media_hrs 
-                   522.96917                    489.38760 
-          blood_pressure_sys     diet_ultra_processed_pct 
-                   606.79817                   1103.18314 
-            diet_omega3_freq            alcohol_drinks_wk 
-                   229.02442                    267.57443 
-       novel_learning_hrs_wk      social_connection_score 
-                   711.64417                    390.71570 
-        chronic_stress_score                  Never_smoke 
-                   570.41870                     69.69719 
-                Former_smoke                Current_smoke 
-                    42.29299                    370.01887 
-              Younger_adults           Middle_aged_adults 
-                    34.15393                      0.00000 
-                Older_adults 
-                  1043.94456 </code></pre>
-</div>
-</div>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Logistic Regression</span></span>
-<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a>lr_model2 <span class="ot">&lt;-</span> </span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb139"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb139-1"><a href="#cb139-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Random Forest</span></span>
+<span id="cb139-2"><a href="#cb139-2" aria-hidden="true" tabindex="-1"></a>rf_model2 <span class="ot">&lt;-</span> </span>
 <span id="cb139-3"><a href="#cb139-3" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify that the model is a multinom_reg</span></span>
-<span id="cb139-5"><a href="#cb139-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">multinom_reg</span>() <span class="sc">|&gt;</span></span>
+<span id="cb139-4"><a href="#cb139-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify model</span></span>
+<span id="cb139-5"><a href="#cb139-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rand_forest</span>() <span class="sc">|&gt;</span></span>
 <span id="cb139-6"><a href="#cb139-6" aria-hidden="true" tabindex="-1"></a>  </span>
 <span id="cb139-7"><a href="#cb139-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
 <span id="cb139-8"><a href="#cb139-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb139-9"><a href="#cb139-9" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb139-10"><a href="#cb139-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select the engine/package that underlies the model (nnet is default)</span></span>
-<span id="cb139-11"><a href="#cb139-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"nnet"</span>)</span>
+<span id="cb139-10"><a href="#cb139-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># engine/package that underlies the model (ranger is default)</span></span>
+<span id="cb139-11"><a href="#cb139-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"ranger"</span>, <span class="at">importance =</span> <span class="st">"impurity"</span>) <span class="sc">|&gt;</span></span>
 <span id="cb139-12"><a href="#cb139-12" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb139-13"><a href="#cb139-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb139-14"><a href="#cb139-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
-<span id="cb139-15"><a href="#cb139-15" aria-hidden="true" tabindex="-1"></a>lr_wflow2 <span class="ot">&lt;-</span> </span>
-<span id="cb139-16"><a href="#cb139-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
-<span id="cb139-17"><a href="#cb139-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe2) <span class="sc">|&gt;</span></span>
-<span id="cb139-18"><a href="#cb139-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(lr_model2)</span>
-<span id="cb139-19"><a href="#cb139-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb139-20"><a href="#cb139-20" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
-<span id="cb139-21"><a href="#cb139-21" aria-hidden="true" tabindex="-1"></a>lr_fit2 <span class="ot">&lt;-</span> <span class="fu">fit</span>(lr_wflow2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<span id="cb139-13"><a href="#cb139-13" aria-hidden="true" tabindex="-1"></a>  <span class="co"># we only have 4 predictors so mtry can't be more than 4</span></span>
+<span id="cb139-14"><a href="#cb139-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_args</span>(<span class="at">mtry =</span> <span class="dv">19</span>, <span class="at">trees =</span> <span class="dv">1000</span>)</span>
+<span id="cb139-15"><a href="#cb139-15" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb139-16"><a href="#cb139-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-17"><a href="#cb139-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
+<span id="cb139-18"><a href="#cb139-18" aria-hidden="true" tabindex="-1"></a>rf_wflow2 <span class="ot">&lt;-</span> </span>
+<span id="cb139-19"><a href="#cb139-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb139-20"><a href="#cb139-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe2) <span class="sc">|&gt;</span></span>
+<span id="cb139-21"><a href="#cb139-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(rf_model2)</span>
+<span id="cb139-22"><a href="#cb139-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-23"><a href="#cb139-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb139-24"><a href="#cb139-24" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
+<span id="cb139-25"><a href="#cb139-25" aria-hidden="true" tabindex="-1"></a>rf_fit2 <span class="ot">&lt;-</span> <span class="fu">fit</span>(rf_wflow2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: !  The following column has zero variance so scaling cannot be used:
+  Middle_aged_adults.
+ℹ Consider using ?step_zv (`?recipes::step_zv()`) to remove those columns
+  before normalizing.</code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Test the importance of the variables</span></span>
+<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a>rf_engine2 <span class="ot">&lt;-</span> <span class="fu">extract_fit_engine</span>(rf_fit2)</span>
+<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb141-4"><a href="#cb141-4" aria-hidden="true" tabindex="-1"></a>rf_importance2 <span class="ot">&lt;-</span> rf_engine2<span class="sc">$</span>variable.importance</span>
+<span id="cb141-5"><a href="#cb141-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb141-6"><a href="#cb141-6" aria-hidden="true" tabindex="-1"></a>rf_importance2</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          sleep_duration_hrs          sleep_quality_score 
+                   385.83247                    193.85716 
+              cardio_mins_wk          water_intake_liters 
+                   815.38874                    344.77665 
+screen_time_recreational_hrs             social_media_hrs 
+                   385.29648                    365.00589 
+          blood_pressure_sys     diet_ultra_processed_pct 
+                   459.61091                    844.43729 
+            diet_omega3_freq            alcohol_drinks_wk 
+                   166.73449                    195.92013 
+       novel_learning_hrs_wk      social_connection_score 
+                   538.36287                    289.32513 
+        chronic_stress_score                  Never_smoke 
+                   422.79921                     55.71112 
+                Former_smoke                Current_smoke 
+                    31.17395                    288.45462 
+              Younger_adults           Middle_aged_adults 
+                    24.84812                      0.00000 
+                Older_adults 
+                   790.80022 </code></pre>
+</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="fu">rank</span>(rf_importance2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>          sleep_duration_hrs          sleep_quality_score 
+                          13                            6 
+              cardio_mins_wk          water_intake_liters 
+                          18                           10 
+screen_time_recreational_hrs             social_media_hrs 
+                          12                           11 
+          blood_pressure_sys     diet_ultra_processed_pct 
+                          15                           19 
+            diet_omega3_freq            alcohol_drinks_wk 
+                           5                            7 
+       novel_learning_hrs_wk      social_connection_score 
+                          16                            9 
+        chronic_stress_score                  Never_smoke 
+                          14                            4 
+                Former_smoke                Current_smoke 
+                           3                            8 
+              Younger_adults           Middle_aged_adults 
+                           2                            1 
+                Older_adults 
+                          17 </code></pre>
+</div>
+</div>
+<p>Diet_ultra_processed is now holding the highest importance, followed by cardio_mins_wk, older adults, novel_learning_hrs_wk, and systolic blood pressure.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb145"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb145-1"><a href="#cb145-1" aria-hidden="true" tabindex="-1"></a><span class="co"># MODEL 2 Logistic Regression</span></span>
+<span id="cb145-2"><a href="#cb145-2" aria-hidden="true" tabindex="-1"></a>lr_model2 <span class="ot">&lt;-</span> </span>
+<span id="cb145-3"><a href="#cb145-3" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb145-4"><a href="#cb145-4" aria-hidden="true" tabindex="-1"></a>  <span class="co"># specify that the model is a multinom_reg</span></span>
+<span id="cb145-5"><a href="#cb145-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">multinom_reg</span>() <span class="sc">|&gt;</span></span>
+<span id="cb145-6"><a href="#cb145-6" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb145-7"><a href="#cb145-7" aria-hidden="true" tabindex="-1"></a>  <span class="co"># mode as classification not continuous</span></span>
+<span id="cb145-8"><a href="#cb145-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_mode</span>(<span class="st">"classification"</span>) <span class="sc">|&gt;</span></span>
+<span id="cb145-9"><a href="#cb145-9" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb145-10"><a href="#cb145-10" aria-hidden="true" tabindex="-1"></a>  <span class="co"># select the engine/package that underlies the model (nnet is default)</span></span>
+<span id="cb145-11"><a href="#cb145-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">set_engine</span>(<span class="st">"nnet"</span>)</span>
+<span id="cb145-12"><a href="#cb145-12" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb145-13"><a href="#cb145-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-14"><a href="#cb145-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Put everything together </span></span>
+<span id="cb145-15"><a href="#cb145-15" aria-hidden="true" tabindex="-1"></a>lr_wflow2 <span class="ot">&lt;-</span> </span>
+<span id="cb145-16"><a href="#cb145-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">workflow</span>() <span class="sc">|&gt;</span></span>
+<span id="cb145-17"><a href="#cb145-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_recipe</span>(memory_recipe2) <span class="sc">|&gt;</span></span>
+<span id="cb145-18"><a href="#cb145-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">add_model</span>(lr_model2)</span>
+<span id="cb145-19"><a href="#cb145-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb145-20"><a href="#cb145-20" aria-hidden="true" tabindex="-1"></a><span class="co"># train the model</span></span>
+<span id="cb145-21"><a href="#cb145-21" aria-hidden="true" tabindex="-1"></a>lr_fit2 <span class="ot">&lt;-</span> <span class="fu">fit</span>(lr_wflow2, data_training2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: !  The following column has zero variance so scaling cannot be used:
   Middle_aged_adults.
@@ -1222,26 +1282,26 @@ screen_time_recreational_hrs             social_media_hrs
 </div>
 </div>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb141"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb141-1"><a href="#cb141-1" aria-hidden="true" tabindex="-1"></a><span class="co"># predict the species of the testing data we held back for each model</span></span>
-<span id="cb141-2"><a href="#cb141-2" aria-hidden="true" tabindex="-1"></a>rf.predict2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_fit2, data_testing2)</span>
-<span id="cb141-3"><a href="#cb141-3" aria-hidden="true" tabindex="-1"></a>lr.predict2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(lr_fit2, data_testing2)</span>
-<span id="cb141-4"><a href="#cb141-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb141-5"><a href="#cb141-5" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
-<span id="cb141-6"><a href="#cb141-6" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="ot">&lt;-</span> rf.predict2 <span class="sc">%&gt;%</span></span>
-<span id="cb141-7"><a href="#cb141-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
-<span id="cb141-8"><a href="#cb141-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing2<span class="sc">$</span>Performance_i)</span>
-<span id="cb141-9"><a href="#cb141-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb141-10"><a href="#cb141-10" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
-<span id="cb141-11"><a href="#cb141-11" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb147"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb147-1"><a href="#cb147-1" aria-hidden="true" tabindex="-1"></a><span class="co"># predict the species of the testing data we held back for each model</span></span>
+<span id="cb147-2"><a href="#cb147-2" aria-hidden="true" tabindex="-1"></a>rf.predict2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(rf_fit2, data_testing2)</span>
+<span id="cb147-3"><a href="#cb147-3" aria-hidden="true" tabindex="-1"></a>lr.predict2 <span class="ot">&lt;-</span> <span class="fu">predict</span>(lr_fit2, data_testing2)</span>
+<span id="cb147-4"><a href="#cb147-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb147-5"><a href="#cb147-5" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
+<span id="cb147-6"><a href="#cb147-6" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="ot">&lt;-</span> rf.predict2 <span class="sc">%&gt;%</span></span>
+<span id="cb147-7"><a href="#cb147-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
+<span id="cb147-8"><a href="#cb147-8" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing2<span class="sc">$</span>Performance_i)</span>
+<span id="cb147-9"><a href="#cb147-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb147-10"><a href="#cb147-10" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
+<span id="cb147-11"><a href="#cb147-11" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          Truth
 Prediction   Low Average  High
-   Low         0      69     7
-   Average     0     938  1897
-   High        0     554 23202</code></pre>
+   Low         0      98     6
+   Average     0    1452  2801
+   High        0     847 34796</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb143"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb143-1"><a href="#cb143-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(rf.outcome2, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
-<span id="cb143-2"><a href="#cb143-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"random forest"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(rf.outcome2, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
+<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"random forest"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1249,14 +1309,14 @@ Prediction   Low Average  High
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb144"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb144-1"><a href="#cb144-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
-<span id="cb144-2"><a href="#cb144-2" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> rf.acc</span>
-<span id="cb144-3"><a href="#cb144-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb144-4"><a href="#cb144-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
-<span id="cb144-5"><a href="#cb144-5" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> rf.spec</span>
-<span id="cb144-6"><a href="#cb144-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb144-7"><a href="#cb144-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
-<span id="cb144-8"><a href="#cb144-8" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> rf.sens</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb150"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb150-1"><a href="#cb150-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
+<span id="cb150-2"><a href="#cb150-2" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> rf.acc</span>
+<span id="cb150-3"><a href="#cb150-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb150-4"><a href="#cb150-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
+<span id="cb150-5"><a href="#cb150-5" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> rf.spec</span>
+<span id="cb150-6"><a href="#cb150-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb150-7"><a href="#cb150-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
+<span id="cb150-8"><a href="#cb150-8" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> rf.sens</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: While computing multiclass `sens()`, some levels had no true events (i.e.
 `true_positive + false_negative = 0`).
@@ -1264,30 +1324,30 @@ Sensitivity is undefined in this case, and those levels will be removed from
 the averaged result.
 Note that the following number of predicted events actually occurred for each
 problematic event level:
-'Low': 76</code></pre>
+'Low': 104</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb146"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb146-1"><a href="#cb146-1" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
-<span id="cb146-2"><a href="#cb146-2" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> rf.prec</span>
-<span id="cb146-3"><a href="#cb146-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb146-4"><a href="#cb146-4" aria-hidden="true" tabindex="-1"></a>rf.eval2 <span class="ot">&lt;-</span> <span class="fu">c</span>(rf.acc<span class="sc">$</span>.estimate, rf.spec<span class="sc">$</span>.estimate, rf.sens<span class="sc">$</span>.estimate, rf.prec<span class="sc">$</span>.estimate)</span>
-<span id="cb146-5"><a href="#cb146-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rf.eval2) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
-<span id="cb146-6"><a href="#cb146-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb146-7"><a href="#cb146-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
-<span id="cb146-8"><a href="#cb146-8" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="ot">&lt;-</span> lr.predict2 <span class="sc">%&gt;%</span></span>
-<span id="cb146-9"><a href="#cb146-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
-<span id="cb146-10"><a href="#cb146-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing2<span class="sc">$</span>Performance_i)</span>
-<span id="cb146-11"><a href="#cb146-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb146-12"><a href="#cb146-12" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
-<span id="cb146-13"><a href="#cb146-13" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb152"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb152-1"><a href="#cb152-1" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
+<span id="cb152-2"><a href="#cb152-2" aria-hidden="true" tabindex="-1"></a>rf.outcome2 <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> rf.prec</span>
+<span id="cb152-3"><a href="#cb152-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-4"><a href="#cb152-4" aria-hidden="true" tabindex="-1"></a>rf.eval2 <span class="ot">&lt;-</span> <span class="fu">c</span>(rf.acc<span class="sc">$</span>.estimate, rf.spec<span class="sc">$</span>.estimate, rf.sens<span class="sc">$</span>.estimate, rf.prec<span class="sc">$</span>.estimate)</span>
+<span id="cb152-5"><a href="#cb152-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(rf.eval2) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
+<span id="cb152-6"><a href="#cb152-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-7"><a href="#cb152-7" aria-hidden="true" tabindex="-1"></a><span class="co"># create a table comparing the predicted species from the true species</span></span>
+<span id="cb152-8"><a href="#cb152-8" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="ot">&lt;-</span> lr.predict2 <span class="sc">%&gt;%</span></span>
+<span id="cb152-9"><a href="#cb152-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">transmute</span>(<span class="at">pred =</span> .pred_class,</span>
+<span id="cb152-10"><a href="#cb152-10" aria-hidden="true" tabindex="-1"></a>            <span class="at">truth =</span> data_testing2<span class="sc">$</span>Performance_i)</span>
+<span id="cb152-11"><a href="#cb152-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb152-12"><a href="#cb152-12" aria-hidden="true" tabindex="-1"></a><span class="co"># confusion matrix</span></span>
+<span id="cb152-13"><a href="#cb152-13" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">conf_mat</span>(pred, truth)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>          Truth
 Prediction   Low Average  High
-   Low         0      72     4
-   Average     0    1010  1825
-   High        0     539 23217</code></pre>
+   Low         0      99     5
+   Average     0    1530  2723
+   High        0     784 34859</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb148"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb148-1"><a href="#cb148-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(lr.outcome2, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
-<span id="cb148-2"><a href="#cb148-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"logistic regression"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb154"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb154-1"><a href="#cb154-1" aria-hidden="true" tabindex="-1"></a><span class="fu">conf_mat</span>(lr.outcome2, <span class="at">truth =</span> truth, <span class="at">estimate =</span> pred) <span class="sc">%&gt;%</span></span>
+<span id="cb154-2"><a href="#cb154-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">autoplot</span>(<span class="at">type =</span> <span class="st">"heatmap"</span>) <span class="sc">+</span> <span class="fu">labs</span>(<span class="at">subtitle =</span> <span class="st">"logistic regression"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1295,14 +1355,14 @@ Prediction   Low Average  High
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb149"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb149-1"><a href="#cb149-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
-<span id="cb149-2"><a href="#cb149-2" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> lr.acc</span>
-<span id="cb149-3"><a href="#cb149-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb149-4"><a href="#cb149-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
-<span id="cb149-5"><a href="#cb149-5" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> lr.spec</span>
-<span id="cb149-6"><a href="#cb149-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb149-7"><a href="#cb149-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
-<span id="cb149-8"><a href="#cb149-8" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> lr.sens</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb155"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1" aria-hidden="true" tabindex="-1"></a><span class="co"># accuracy</span></span>
+<span id="cb155-2"><a href="#cb155-2" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">accuracy</span>(pred, truth) <span class="ot">-&gt;</span> lr.acc</span>
+<span id="cb155-3"><a href="#cb155-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-4"><a href="#cb155-4" aria-hidden="true" tabindex="-1"></a><span class="co"># specificity</span></span>
+<span id="cb155-5"><a href="#cb155-5" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">spec</span>(pred, truth) <span class="ot">-&gt;</span> lr.spec</span>
+<span id="cb155-6"><a href="#cb155-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb155-7"><a href="#cb155-7" aria-hidden="true" tabindex="-1"></a><span class="co"># sensitivity</span></span>
+<span id="cb155-8"><a href="#cb155-8" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">sens</span>(pred, truth) <span class="ot">-&gt;</span> lr.sens</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stderr">
 <pre><code>Warning: While computing multiclass `sens()`, some levels had no true events (i.e.
 `true_positive + false_negative = 0`).
@@ -1310,31 +1370,31 @@ Sensitivity is undefined in this case, and those levels will be removed from
 the averaged result.
 Note that the following number of predicted events actually occurred for each
 problematic event level:
-'Low': 76</code></pre>
+'Low': 104</code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb151"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb151-1"><a href="#cb151-1" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
-<span id="cb151-2"><a href="#cb151-2" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> lr.prec</span>
-<span id="cb151-3"><a href="#cb151-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb151-4"><a href="#cb151-4" aria-hidden="true" tabindex="-1"></a>lr.eval2 <span class="ot">=</span> <span class="fu">c</span>(lr.acc<span class="sc">$</span>.estimate, lr.spec<span class="sc">$</span>.estimate, lr.sens<span class="sc">$</span>.estimate, lr.prec<span class="sc">$</span>.estimate)</span>
-<span id="cb151-5"><a href="#cb151-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lr.eval2) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
-<span id="cb151-6"><a href="#cb151-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb151-7"><a href="#cb151-7" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(rf.eval2, lr.eval2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb157"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1" aria-hidden="true" tabindex="-1"></a><span class="co"># precision</span></span>
+<span id="cb157-2"><a href="#cb157-2" aria-hidden="true" tabindex="-1"></a>lr.outcome2 <span class="sc">|&gt;</span> <span class="fu">precision</span>(pred, truth) <span class="ot">-&gt;</span> lr.prec</span>
+<span id="cb157-3"><a href="#cb157-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-4"><a href="#cb157-4" aria-hidden="true" tabindex="-1"></a>lr.eval2 <span class="ot">=</span> <span class="fu">c</span>(lr.acc<span class="sc">$</span>.estimate, lr.spec<span class="sc">$</span>.estimate, lr.sens<span class="sc">$</span>.estimate, lr.prec<span class="sc">$</span>.estimate)</span>
+<span id="cb157-5"><a href="#cb157-5" aria-hidden="true" tabindex="-1"></a><span class="fu">names</span>(lr.eval2) <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"accuracy"</span>, <span class="st">"specificity"</span>, <span class="st">"sensitivity"</span>, <span class="st">"precision"</span>)</span>
+<span id="cb157-6"><a href="#cb157-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb157-7"><a href="#cb157-7" aria-hidden="true" tabindex="-1"></a><span class="fu">rbind</span>(rf.eval2, lr.eval2)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>          accuracy specificity sensitivity precision
-rf.eval2 0.9052387   0.8555632   0.7625292 0.4358479
-lr.eval2 0.9085011   0.8639244   0.7750233 0.4445240</code></pre>
+<pre><code>         accuracy specificity sensitivity precision
+rf.eval2 0.906200   0.8565176   0.7655544 0.4392142
+lr.eval2 0.909725   0.8666827   0.7807436 0.4459167</code></pre>
 </div>
 </div>
 </section>
 </section>
 <section id="discussion" class="level2">
 <h2 class="anchored" data-anchor-id="discussion">Discussion</h2>
-<p>PCA &amp; UMAP might not be the best approach for behavioral data, especially when no distinctive features (e.g.&nbsp;race, region, country) are present.</p>
-<p>Random forest has higher accuracy, specificity and sensitivity, while logistic regression has higher precision.</p>
+<p>Age holds the highest importance, followed by ultra processed diet, cardio mins wk, novel learning hrs wk, and chronic stress score.</p>
+<p>Random forest has higher accuracy, specificity and sensitivity, while logistic regression has higher precision. However, the precision in both random forest and logistic regression are fairly low.</p>
 </section>
 <section id="conclusions" class="level2">
 <h2 class="anchored" data-anchor-id="conclusions">Conclusions</h2>
-<p>Higher dimensions might be necessary for the dataset to clarify the</p>
+<p>Low precision due to high cognitive performer numbers in the dataset. Increasing number of low and average performers will help training the model.</p>
 </section>
 <section id="references" class="level2">
 <h2 class="anchored" data-anchor-id="references">References</h2>
@@ -1345,36 +1405,36 @@ lr.eval2 0.9085011   0.8639244   0.7750233 0.4445240</code></pre>
 <h2 class="anchored" data-anchor-id="extras">Extras:</h2>
 <p>Lets look at clustering and see how our population clusters together. ### Hierarchical Clustering</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb153"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb153-1"><a href="#cb153-1" aria-hidden="true" tabindex="-1"></a>age_group_labels <span class="ot">&lt;-</span> age_data_plot<span class="sc">$</span>age_group</span>
-<span id="cb153-2"><a href="#cb153-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(age_group_labels)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb159"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1" aria-hidden="true" tabindex="-1"></a>age_group_labels <span class="ot">&lt;-</span> age_data_plot<span class="sc">$</span>age_group</span>
+<span id="cb159-2"><a href="#cb159-2" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(age_group_labels)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>age_group_labels
     Younger adults Middle-aged adults       Older adults 
             185000             269321              45679 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb155"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb155-1"><a href="#cb155-1" aria-hidden="true" tabindex="-1"></a>score_grouped_data <span class="ot">&lt;-</span> age_data_plot <span class="sc">|&gt;</span> </span>
-<span id="cb155-2"><a href="#cb155-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Performance_i =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
-<span id="cb155-3"><a href="#cb155-3" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">16</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;</span> <span class="dv">22</span> <span class="sc">~</span> <span class="st">"Low"</span>,</span>
-<span id="cb155-4"><a href="#cb155-4" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">22</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;</span> <span class="dv">26</span> <span class="sc">~</span> <span class="st">"Average"</span>,</span>
-<span id="cb155-5"><a href="#cb155-5" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">26</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="st">"High"</span>),</span>
-<span id="cb155-6"><a href="#cb155-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Low"</span>, <span class="st">"Average"</span>, <span class="st">"High"</span>), </span>
-<span id="cb155-7"><a href="#cb155-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">ordered =</span> <span class="cn">TRUE</span>))</span>
-<span id="cb155-8"><a href="#cb155-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-9"><a href="#cb155-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
-<span id="cb155-10"><a href="#cb155-10" aria-hidden="true" tabindex="-1"></a>hc_data <span class="ot">&lt;-</span> score_grouped_data <span class="sc">|&gt;</span>  <span class="fu">slice_sample</span>(<span class="at">n =</span> <span class="dv">1000</span>)</span>
-<span id="cb155-11"><a href="#cb155-11" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb155-12"><a href="#cb155-12" aria-hidden="true" tabindex="-1"></a>sliced_hc_data <span class="ot">&lt;-</span> <span class="fu">subset</span>(hc_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(Performance_i, smoking_status, age_group, cognitive_assessment_score, age))</span>
-<span id="cb155-13"><a href="#cb155-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-14"><a href="#cb155-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Scale</span></span>
-<span id="cb155-15"><a href="#cb155-15" aria-hidden="true" tabindex="-1"></a>hc_data_std <span class="ot">&lt;-</span> <span class="fu">scale</span>(sliced_hc_data)</span>
-<span id="cb155-16"><a href="#cb155-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-17"><a href="#cb155-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance</span></span>
-<span id="cb155-18"><a href="#cb155-18" aria-hidden="true" tabindex="-1"></a>hc_data_dist <span class="ot">&lt;-</span> <span class="fu">dist</span>(hc_data_std)</span>
-<span id="cb155-19"><a href="#cb155-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-20"><a href="#cb155-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Hierarchical clustering algorithm</span></span>
-<span id="cb155-21"><a href="#cb155-21" aria-hidden="true" tabindex="-1"></a>hc.out_data <span class="ot">&lt;-</span> <span class="fu">hclust</span>(hc_data_dist, <span class="at">method =</span> <span class="st">"complete"</span>)</span>
-<span id="cb155-22"><a href="#cb155-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb155-23"><a href="#cb155-23" aria-hidden="true" tabindex="-1"></a>hc.out_data</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb161"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb161-1"><a href="#cb161-1" aria-hidden="true" tabindex="-1"></a>score_grouped_data <span class="ot">&lt;-</span> age_data_plot <span class="sc">|&gt;</span> </span>
+<span id="cb161-2"><a href="#cb161-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Performance_i =</span> <span class="fu">factor</span>(<span class="fu">case_when</span>(</span>
+<span id="cb161-3"><a href="#cb161-3" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">16</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;</span> <span class="dv">22</span> <span class="sc">~</span> <span class="st">"Low"</span>,</span>
+<span id="cb161-4"><a href="#cb161-4" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">22</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;</span> <span class="dv">26</span> <span class="sc">~</span> <span class="st">"Average"</span>,</span>
+<span id="cb161-5"><a href="#cb161-5" aria-hidden="true" tabindex="-1"></a>  cognitive_assessment_score <span class="sc">&gt;=</span> <span class="dv">26</span> <span class="sc">&amp;</span> cognitive_assessment_score <span class="sc">&lt;=</span> <span class="dv">30</span> <span class="sc">~</span> <span class="st">"High"</span>),</span>
+<span id="cb161-6"><a href="#cb161-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">levels =</span> <span class="fu">c</span>(<span class="st">"Low"</span>, <span class="st">"Average"</span>, <span class="st">"High"</span>), </span>
+<span id="cb161-7"><a href="#cb161-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">ordered =</span> <span class="cn">TRUE</span>))</span>
+<span id="cb161-8"><a href="#cb161-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-9"><a href="#cb161-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Data</span></span>
+<span id="cb161-10"><a href="#cb161-10" aria-hidden="true" tabindex="-1"></a>hc_data <span class="ot">&lt;-</span> score_grouped_data <span class="sc">|&gt;</span>  <span class="fu">slice_sample</span>(<span class="at">n =</span> <span class="dv">1000</span>)</span>
+<span id="cb161-11"><a href="#cb161-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb161-12"><a href="#cb161-12" aria-hidden="true" tabindex="-1"></a>sliced_hc_data <span class="ot">&lt;-</span> <span class="fu">subset</span>(hc_data, <span class="at">select =</span> <span class="sc">-</span><span class="fu">c</span>(Performance_i, smoking_status, age_group, cognitive_assessment_score, age))</span>
+<span id="cb161-13"><a href="#cb161-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-14"><a href="#cb161-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Scale</span></span>
+<span id="cb161-15"><a href="#cb161-15" aria-hidden="true" tabindex="-1"></a>hc_data_std <span class="ot">&lt;-</span> <span class="fu">scale</span>(sliced_hc_data)</span>
+<span id="cb161-16"><a href="#cb161-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-17"><a href="#cb161-17" aria-hidden="true" tabindex="-1"></a><span class="co"># Distance</span></span>
+<span id="cb161-18"><a href="#cb161-18" aria-hidden="true" tabindex="-1"></a>hc_data_dist <span class="ot">&lt;-</span> <span class="fu">dist</span>(hc_data_std)</span>
+<span id="cb161-19"><a href="#cb161-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-20"><a href="#cb161-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Hierarchical clustering algorithm</span></span>
+<span id="cb161-21"><a href="#cb161-21" aria-hidden="true" tabindex="-1"></a>hc.out_data <span class="ot">&lt;-</span> <span class="fu">hclust</span>(hc_data_dist, <span class="at">method =</span> <span class="st">"complete"</span>)</span>
+<span id="cb161-22"><a href="#cb161-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb161-23"><a href="#cb161-23" aria-hidden="true" tabindex="-1"></a>hc.out_data</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>
 Call:
@@ -1384,9 +1444,9 @@ Cluster method   : complete
 Distance         : euclidean 
 Number of objects: 1000 </code></pre>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb157"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb157-1"><a href="#cb157-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dendogram</span></span>
-<span id="cb157-2"><a href="#cb157-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(hc.out_data)</span>
-<span id="cb157-3"><a href="#cb157-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rect.hclust</span>(hc.out_data, <span class="at">k =</span> <span class="dv">6</span>, <span class="at">border =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb163"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb163-1"><a href="#cb163-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Dendogram</span></span>
+<span id="cb163-2"><a href="#cb163-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plot</span>(hc.out_data)</span>
+<span id="cb163-3"><a href="#cb163-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rect.hclust</span>(hc.out_data, <span class="at">k =</span> <span class="dv">6</span>, <span class="at">border =</span> <span class="dv">2</span><span class="sc">:</span><span class="dv">7</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1394,10 +1454,10 @@ Number of objects: 1000 </code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb158"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb158-1"><a href="#cb158-1" aria-hidden="true" tabindex="-1"></a>data.clusters <span class="ot">&lt;-</span> <span class="fu">cutree</span>(hc.out_data, <span class="at">k =</span> <span class="dv">9</span>)</span>
-<span id="cb158-2"><a href="#cb158-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb158-3"><a href="#cb158-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(hc_data_std) <span class="ot">&lt;-</span> <span class="fu">paste</span>(hc_data<span class="sc">$</span>Performance_i, hc_data<span class="sc">$</span>age_group, <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(hc_data)[<span class="dv">1</span>], <span class="at">sep =</span> <span class="st">"_"</span>)</span>
-<span id="cb158-4"><a href="#cb158-4" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_cluster</span>(<span class="fu">list</span>(<span class="at">data =</span> hc_data_std, <span class="at">cluster =</span> data.clusters))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb164"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb164-1"><a href="#cb164-1" aria-hidden="true" tabindex="-1"></a>data.clusters <span class="ot">&lt;-</span> <span class="fu">cutree</span>(hc.out_data, <span class="at">k =</span> <span class="dv">9</span>)</span>
+<span id="cb164-2"><a href="#cb164-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb164-3"><a href="#cb164-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rownames</span>(hc_data_std) <span class="ot">&lt;-</span> <span class="fu">paste</span>(hc_data<span class="sc">$</span>Performance_i, hc_data<span class="sc">$</span>age_group, <span class="dv">1</span><span class="sc">:</span><span class="fu">dim</span>(hc_data)[<span class="dv">1</span>], <span class="at">sep =</span> <span class="st">"_"</span>)</span>
+<span id="cb164-4"><a href="#cb164-4" aria-hidden="true" tabindex="-1"></a><span class="fu">fviz_cluster</span>(<span class="fu">list</span>(<span class="at">data =</span> hc_data_std, <span class="at">cluster =</span> data.clusters))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div>
 <figure class="figure">
@@ -1405,19 +1465,19 @@ Number of objects: 1000 </code></pre>
 </figure>
 </div>
 </div>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb159"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb159-1"><a href="#cb159-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data.clusters, hc_data<span class="sc">$</span>age_group)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb165"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb165-1"><a href="#cb165-1" aria-hidden="true" tabindex="-1"></a><span class="fu">table</span>(data.clusters, hc_data<span class="sc">$</span>age_group)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>             
 data.clusters Younger adults Middle-aged adults Older adults
-            1            109                170           28
-            2              8                  9            3
-            3             59                 89           13
-            4             45                 60           10
-            5             49                112           18
-            6             30                 28            5
-            7             34                 72           17
-            8             10                 11            3
-            9              4                  3            1</code></pre>
+            1            180                237           53
+            2             69                115           20
+            3              4                 20            5
+            4             12                 15            3
+            5             52                 60           10
+            6             23                 56            8
+            7              7                 13            3
+            8              9                 20            2
+            9              2                  1            1</code></pre>
 </div>
 </div>
 <p><strong>Last updated:</strong> June 2026</p>
