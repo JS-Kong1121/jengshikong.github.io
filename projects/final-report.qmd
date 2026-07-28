@@ -10,8 +10,6 @@ author: "Jeng Shi Kong"
 
 Replace this with an introduction to your research question or project. What are you investigating? Why does it matter?
 
-
-
 ## Methods
 
 Describe how you conducted your analysis. What data did you use? What analyses did you perform?
@@ -36,36 +34,643 @@ Here's a sample R code block:
 #| message: false
 
 # Load a library
+library(dplyr)
+library(tidyverse)
+library(rsample)
+library(tidymodels)
+library(ranger)
+library(embed)
+library(dlookr)
 library(ggplot2)
+library("PerformanceAnalytics")
 
-# Create some sample data
-data <- data.frame(
-  x = 1:10,
-  y = rnorm(10)
-)
-
-# Make a plot
-plot(data$x, data$y)
+# Load data
+raw <- read.csv("/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/clean_realistic_survey_data_500k.csv")
 ```
 
-### Example Table
+```{r}
+ggplot(raw, aes(x = age, y = cognitive_assessment_score, color = smoking_status)) +
+  geom_point()
+```
 
-| Method     | Result          | P-value |
-|------------|-----------------|---------|
-| Analysis 1 | Significant     | 0.01    |
-| Analysis 2 | Not Significant | 0.15    |
+```{r}
+age_data_plot <- raw |> 
+  mutate(age_group = factor(case_when(
+  age >= 18 & age < 40 ~ "Younger adults",
+  age >= 40 & age < 65 ~ "Middle-aged adults",
+  age >= 65 & age <=90 ~ "Older adults"),
+  levels = c("Younger adults", "Middle-aged adults", "Older adults"),
+  ordered = TRUE)
+  )
+
+ggplot(age_data_plot, aes(x = age_group, y = cognitive_assessment_score, color = age_group)) +
+  geom_boxplot()
+```
+
+
+![Cognitive assessment score in different age groups](/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/final-report_files/saved-images/cog_vs_age_group.png)
+
+```{r}
+#Correlation matrix (dropped smoking status data because its categorical)
+#too much data
+set.seed(756)
+
+mat <- raw |>
+  dplyr::select(where(is.numeric))
+
+mat_sample <- mat |> slice_sample(n = 1000)
+
+GGally::ggpairs(mat_sample)
+```
+
+
+
+
+
+![Correlation Matrix](/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/final-report_files/saved-images/CorrelationAnalysis.png)
+
+```{r}
+#PCA
+set.seed(999)
+
+pca_recipe <- recipe(~., data = raw) |>
+  update_role(smoking_status, new_role = "id") |>
+  step_naomit(all_predictors()) |>
+  step_normalize(all_predictors()) |>
+  step_pca(all_predictors(), id = "pca")
+
+pca_recipe
+
+#Prep data
+pca_prep <-prep(pca_recipe, raw)
+
+pca_prep
+
+#Bake data
+pca_bake <- bake(pca_prep, new_data = NULL)
+
+pca_bake
+
+#Evaluate PCA
+pca_prep |>
+  tidy(id = "pca", type = "variance") |>
+  filter(terms == "percent variance") |>
+  ggplot(aes(x = component, y = value)) +
+  geom_col(fill = "skyblue") +
+  xlim(c(0, 5)) +
+  ylab("% of total variance") +
+  geom_text(aes(label = round(value, 1)), vjust = 1.5)
+
+#| fig-width: 12
+#| fig-height: 6
+
+# Plot which predictors/variables are explained in each principal component
+pca_prep |>
+  tidy(id = "pca", type = "coef") |> 
+  ggplot(aes(abs(value), terms, fill = value > 0)) +
+  geom_col() +
+  facet_wrap(~component, scales = "free_y") +
+  scale_fill_manual(values = c("#b6dfe2", "#0A537D")) +
+  labs(
+    x = "Absolute value of contribution",
+    y = NULL, fill = "Pos Affil") 
+
+pca_plot <- pca_bake |> 
+  ggplot(aes(PC1, PC2)) +
+  geom_point(aes(color = smoking_status, shape = smoking_status), 
+             alpha = 0.8, 
+             size = 2) +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) +
+  theme_bw()
+
+pca_plot
+
+#Add the vectors for how the variables are explained by each PC
+pca_wider <- pca_prep |> 
+              tidy(id = "pca", type = "coef") |>
+              pivot_wider(names_from = component, id_cols = terms)
+
+arrow_style <- arrow(length = unit(.05, "inches"), type = "closed")
+
+pca_plot +
+  geom_segment(data = pca_wider,
+               aes(xend = PC1, yend = PC2), 
+               x = 0, 
+               y = 0, 
+               arrow = arrow_style) + 
+  geom_text(data = pca_wider,
+            aes(x = PC1, y = PC2, label = terms), 
+            hjust = 0, 
+            vjust = 1,
+            size = 5, 
+            color = '#0A537D') 
+
+pca_plot <- pca_bake |> 
+  ggplot(aes(PC1, PC3)) +
+  geom_point(aes(color = smoking_status, shape = smoking_status), 
+             alpha = 0.8, 
+             size = 2) +
+  scale_colour_manual(values = c("darkorange","purple","cyan4")) +
+  theme_bw()
+
+pca_plot
+```
+
+As we can see that PCA is not the best way to make clusters of our population. PC1 only explain 17% of the variances and we reach 50% variances explained at PC3.
+
+What i want to say is that this dataset does not have a distinctive factor for
+
+```{r}
+set.seed(666)
+
+UMAP_raw <- raw |>
+  slice_sample(n= 50000)
+
+UMAP_data <- UMAP_raw |> 
+  mutate(Performance_i = factor(case_when(
+  cognitive_assessment_score >= 16 & cognitive_assessment_score < 22 ~ "Low",
+  cognitive_assessment_score >= 22 & cognitive_assessment_score < 26 ~ "Average",
+  cognitive_assessment_score >= 26 & cognitive_assessment_score <= 30 ~ "High"),
+  levels = c("Low", "Average", "High"), 
+  ordered = TRUE), 
+  )
+
+cleaned_UMAP_data <- subset(UMAP_data, select = -cognitive_assessment_score) 
+
+UMAP_recipe <-
+  recipe(Performance_i ~ ., data = cleaned_UMAP_data) |>
+  update_role(Performance_i, smoking_status, new_role = "id") |>
+  step_naomit(all_predictors()) |>
+  step_normalize(all_predictors()) |>
+  step_umap(all_numeric_predictors(), num_comp = 3)
+
+UMAP_recipe
+
+#Prep data
+UMAP_prep <- prep(UMAP_recipe, UMAP_data)
+
+UMAP_prep
+
+#Bake data
+UMAP_bake <- bake(UMAP_prep, new_data = NULL)
+
+UMAP_bake
+
+UMAP_bake |> 
+  ggplot(aes(x = UMAP1, y = UMAP2, color = Performance_i, shape = smoking_status))+
+  geom_point(alpha = .5, size = 2) +
+  scale_color_viridis_d()
+
+```
+
+## Prep the Data
+
+```{r}
+# rf & lr: Prepare the dataset
+grouped_data <- raw |> 
+  mutate(Performance_i = factor(case_when(
+  cognitive_assessment_score >= 16 & cognitive_assessment_score < 22 ~ "Low",
+  cognitive_assessment_score >= 22 & cognitive_assessment_score < 26 ~ "Average",
+  cognitive_assessment_score >= 26 & cognitive_assessment_score <= 30 ~ "High"),
+  levels = c("Low", "Average", "High"), 
+  ordered = TRUE), 
+  
+  Never_smoke = case_when(
+  smoking_status == "Never" ~ 1,
+  smoking_status != "Never" ~ 0),
+  
+  Former_smoke = case_when(
+  smoking_status == "Former" ~ 1,
+  smoking_status != "Former" ~ 0),
+    
+  Current_smoke = case_when(
+  smoking_status == "Current" ~ 1,
+  smoking_status != "Current" ~ 0)
+  )
+
+data_i <- subset(grouped_data, select = -c(smoking_status, cognitive_assessment_score)) 
+```
+
+```{r}
+# set a seed in order to make the analysis reproducible.
+set.seed(666)
+
+# split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.
+
+data_final <- data_i |>
+  slice_sample(n= 80000)
+
+# split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. 
+split_data <- initial_split(data_final, prop=1/2, strata = Performance_i)
+data_training <- training(split_data)
+data_testing <- testing(split_data)
+
+# lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  
+
+data_training |> 
+  group_by(Performance_i) |>
+  summarise( count = n(),
+             percent = n()/nrow(data_training) * 100)
+  
+data_testing |> 
+  group_by(Performance_i) |>
+  summarise( count = n(),
+             percent = n()/nrow(data_testing) * 100)
+
+# The recipe sets up what data we are going to use and how it to be treated before doing the modeling.
+memory_recipe <-
+  recipe( Performance_i ~ age + sleep_duration_hrs + sleep_quality_score + cardio_mins_wk + water_intake_liters + screen_time_recreational_hrs + social_media_hrs + blood_pressure_sys + diet_ultra_processed_pct + diet_omega3_freq + alcohol_drinks_wk + novel_learning_hrs_wk + social_connection_score + chronic_stress_score + Never_smoke + Former_smoke + Current_smoke, data = data_final) |>
+  step_naomit(all_predictors()) |> 
+  step_normalize(all_predictors()) 
+
+memory_recipe
+
+# The prep step pulls in all the variables from the recipe based on the dataset we give it. 
+data_prep <- prep(memory_recipe, data_training)
+data_prep
+
+
+# the bake steps preforms the prep steps and in this case normalizes all the data.
+data_bake <- bake(data_prep, new_data = NULL)
+data_bake
+
+```
+
+```{r}
+# MODEL 1 Random Forest
+rf_model <- 
+  
+  # specify model
+  rand_forest() |>
+  
+  # mode as classification not continuous
+  set_mode("classification") |>
+  
+  # engine/package that underlies the model (ranger is default)
+  set_engine("ranger", importance = "impurity") |>
+  
+  # we only have 4 predictors so mtry can't be more than 4
+  set_args(mtry = 17, trees = 1000)
+  
+
+# Put everything together 
+rf_wflow <- 
+  workflow() |>
+  add_recipe(memory_recipe) |>
+  add_model(rf_model)
+
+
+# train the model
+rf_fit <- fit(rf_wflow, data_training)
+
+# Test the importance of the variables
+rf_engine <- extract_fit_engine(rf_fit)
+
+rf_importance <- rf_engine$variable.importance
+
+rf_importance
+
+```
+
+Importance of each variables through random forest
+
+| Importance                   | Importance |
+|------------------------------|------------|
+| age                          | 731.25557  |
+| diet_ultra_processed_pct     | 416.80262  |
+| cardio_mins_wk               | 401.06220  |
+| novel_learning_hrs_wk        | 247.79172  |
+| chronic_stress_score         | 207.06067  |
+| sleep_duration_hrs           | 179.65047  |
+| screen_time_recreational_hrs | 173.99464  |
+| blood_pressure_sys           | 163.87161  |
+| social_media_hrs             | 161.56793  |
+| water_intake_liters          | 145.43926  |
+| Current_smoke                | 144.45285  |
+| social_connection_score      | 135.53641  |
+| alcohol_drinks_wk            | 87.79295   |
+| sleep_quality_score          | 87.28408   |
+| diet_omega3_freq             | 79.49748   |
+| Never_smoke                  | 25.18725   |
+| Former_smoke                 | 14.30315   |
+
+```{r}
+
+# MODEL 2 Logistic Regression
+lr_model <- 
+  
+  # specify that the model is a multinom_reg
+  multinom_reg() |>
+  
+  # mode as classification not continuous
+  set_mode("classification") |>
+  
+  # select the engine/package that underlies the model (nnet is default)
+  set_engine("nnet")
+  
+
+# Put everything together 
+lr_wflow <- 
+  workflow() |>
+  add_recipe(memory_recipe) |>
+  add_model(lr_model)
+
+# train the model
+lr_fit <- fit(lr_wflow, data_training)
+
+
+```
+
+```{r}
+
+# predict the species of the testing data we held back for each model
+rf.predict <- predict(rf_fit, data_testing)
+lr.predict <- predict(lr_fit, data_testing)
+
+# create a table comparing the predicted species from the true species
+rf.outcome <- rf.predict %>%
+  transmute(pred = .pred_class,
+            truth = data_testing$Performance)
+
+# confusion matrix
+rf.outcome |> conf_mat(pred, truth)
+
+conf_mat(rf.outcome, truth = truth, estimate = pred) %>%
+  autoplot(type = "heatmap") + labs(subtitle = "random forest")
+
+# accuracy
+rf.outcome |> accuracy(pred, truth) -> rf.acc
+
+# specificity
+rf.outcome |> spec(pred, truth) -> rf.spec
+
+# sensitivity
+rf.outcome |> sens(pred, truth) -> rf.sens
+
+# precision
+rf.outcome |> precision(pred, truth) -> rf.prec
+
+rf.eval <- c(rf.acc$.estimate, rf.spec$.estimate, rf.sens$.estimate, rf.prec$.estimate)
+names(rf.eval) <- c("accuracy", "specificity", "sensitivity", "precision")
+
+# create a table comparing the predicted species from the true species
+lr.outcome <- lr.predict %>%
+  transmute(pred = .pred_class,
+            truth = data_testing$Performance_i)
+
+# confusion matrix
+lr.outcome |> conf_mat(pred, truth)
+
+conf_mat(lr.outcome, truth = truth, estimate = pred) %>%
+  autoplot(type = "heatmap") + labs(subtitle = "logistic regression")
+
+# accuracy
+lr.outcome |> accuracy(pred, truth) -> lr.acc
+
+# specificity
+lr.outcome |> spec(pred, truth) -> lr.spec
+
+# sensitivity
+lr.outcome |> sens(pred, truth) -> lr.sens
+
+# precision
+lr.outcome |> precision(pred, truth) -> lr.prec
+
+lr.eval = c(lr.acc$.estimate, lr.spec$.estimate, lr.sens$.estimate, lr.prec$.estimate)
+names(lr.eval) <- c("accuracy", "specificity", "sensitivity", "precision")
+
+rbind(rf.eval, lr.eval)
+
+```
+
+|         | accuracy | specificity | sensitivity | precision |
+|---------|----------|-------------|-------------|-----------|
+| rf.eval | 0.9104   | 0.8770378   | 0.7510783   | 0.4693407 |
+| lr.eval | 0.9048   | 0.8686475   | 0.7324793   | 0.5021380 |
+
+What if we group age together.
+
+```{r}
+# rf & lr: Prepare the dataset
+age_grouped_data <- grouped_data |> 
+  mutate(age_group = factor(case_when(
+  age >= 18 & age < 40 ~ "Younger adults",
+  age >= 40 & age < 65 ~ "Middle-aged adults",
+  age >= 65 & age <=90 ~ "Older adults"),
+  levels = c("Younger adults", "Middle-aged adults", "Older adults"),
+  ordered = TRUE)
+  )
+
+cleaned_data <- age_grouped_data |>
+    mutate(Younger_adults = case_when(
+    age_group == "Younger adults" ~ 1,
+    age_group != "Younger adults" ~ 0),
+  
+    Middle_aged_adults = case_when(
+    age_group == "Middle_aged adults" ~ 1,
+    age_group != "Middle_aged adults" ~ 0),
+    
+    Older_adults = case_when(
+    age_group == "Older adults" ~ 1,
+    age_group != "Older adults" ~ 0))
+
+data_i2 <- subset(cleaned_data, select = -c(smoking_status, cognitive_assessment_score, age, age_group) )
+```
+
+```{r}
+# set a seed in order to make the analysis reproducible.
+set.seed(666)
+
+# split the data into training and testing sets. We will train the model on the training set and then test how well it worked on the testing data.
+
+data_final2 <- data_i2 |>
+  slice_sample(n= 80000)
+
+# split the data 70% for training and 30% for testing. The bulk of the data is usually used for training the models. 
+split_data2 <- initial_split(data_final2, prop=2/3, strata = Performance_i)
+data_training2 <- training(split_data2)
+data_testing2 <- testing(split_data2)
+
+# lets check it did the split correctly, if a different seed was used a the splits would be slightly different.  
+
+data_training2 |> 
+  group_by(Performance_i) |>
+  summarise( count = n(),
+             percent = n()/nrow(data_training2) * 100)
+  
+data_testing2 |> 
+  group_by(Performance_i) |>
+  summarise( count = n(),
+             percent = n()/nrow(data_testing2) * 100)
+
+# The recipe sets up what data we are going to use and how it to be treated before doing the modeling.
+memory_recipe2 <-
+  recipe( Performance_i ~ sleep_duration_hrs + sleep_quality_score + cardio_mins_wk + water_intake_liters + screen_time_recreational_hrs + social_media_hrs + blood_pressure_sys + diet_ultra_processed_pct + diet_omega3_freq + alcohol_drinks_wk + novel_learning_hrs_wk + social_connection_score + chronic_stress_score + Never_smoke + Former_smoke + Current_smoke + Younger_adults + Middle_aged_adults + Older_adults , data = data_final2) |>
+  step_naomit(all_predictors()) |> 
+  step_normalize(all_predictors()) 
+
+memory_recipe2
+
+# The prep step pulls in all the variables from the recipe based on the dataset we give it. 
+data_prep2 <- prep(memory_recipe2, data_training2)
+data_prep2
+
+
+# the bake steps preforms the prep steps and in this case normalizes all the data.
+data_bake2 <- bake(data_prep2, new_data = NULL)
+data_bake2
+
+```
+
+```{r}
+# MODEL 2 Random Forest
+rf_model2 <- 
+  
+  # specify model
+  rand_forest() |>
+  
+  # mode as classification not continuous
+  set_mode("classification") |>
+  
+  # engine/package that underlies the model (ranger is default)
+  set_engine("ranger", importance = "impurity") |>
+  
+  # we only have 4 predictors so mtry can't be more than 4
+  set_args(mtry = 19, trees = 1000)
+  
+
+# Put everything together 
+rf_wflow2 <- 
+  workflow() |>
+  add_recipe(memory_recipe2) |>
+  add_model(rf_model2)
+
+
+# train the model
+rf_fit2 <- fit(rf_wflow2, data_training2)
+
+# Test the importance of the variables
+rf_engine2 <- extract_fit_engine(rf_fit2)
+
+rf_importance2 <- rf_engine2$variable.importance
+
+rf_importance2
+```
+
+```{r}
+
+# MODEL 2 Logistic Regression
+lr_model2 <- 
+  
+  # specify that the model is a multinom_reg
+  multinom_reg() |>
+  
+  # mode as classification not continuous
+  set_mode("classification") |>
+  
+  # select the engine/package that underlies the model (nnet is default)
+  set_engine("nnet")
+  
+
+# Put everything together 
+lr_wflow2 <- 
+  workflow() |>
+  add_recipe(memory_recipe2) |>
+  add_model(lr_model2)
+
+# train the model
+lr_fit2 <- fit(lr_wflow2, data_training2)
+
+
+```
+
+```{r}
+
+# predict the species of the testing data we held back for each model
+rf.predict2 <- predict(rf_fit2, data_testing2)
+lr.predict2 <- predict(lr_fit2, data_testing2)
+
+# create a table comparing the predicted species from the true species
+rf.outcome2 <- rf.predict2 %>%
+  transmute(pred = .pred_class,
+            truth = data_testing2$Performance_i)
+
+# confusion matrix
+rf.outcome2 |> conf_mat(pred, truth)
+
+conf_mat(rf.outcome2, truth = truth, estimate = pred) %>%
+  autoplot(type = "heatmap") + labs(subtitle = "random forest")
+
+# accuracy
+rf.outcome2 |> accuracy(pred, truth) -> rf.acc
+
+# specificity
+rf.outcome2 |> spec(pred, truth) -> rf.spec
+
+# sensitivity
+rf.outcome2 |> sens(pred, truth) -> rf.sens
+
+# precision
+rf.outcome2 |> precision(pred, truth) -> rf.prec
+
+rf.eval2 <- c(rf.acc$.estimate, rf.spec$.estimate, rf.sens$.estimate, rf.prec$.estimate)
+names(rf.eval2) <- c("accuracy", "specificity", "sensitivity", "precision")
+
+# create a table comparing the predicted species from the true species
+lr.outcome2 <- lr.predict2 %>%
+  transmute(pred = .pred_class,
+            truth = data_testing2$Performance_i)
+
+# confusion matrix
+lr.outcome2 |> conf_mat(pred, truth)
+
+conf_mat(lr.outcome2, truth = truth, estimate = pred) %>%
+  autoplot(type = "heatmap") + labs(subtitle = "logistic regression")
+
+# accuracy
+lr.outcome2 |> accuracy(pred, truth) -> lr.acc
+
+# specificity
+lr.outcome2 |> spec(pred, truth) -> lr.spec
+
+# sensitivity
+lr.outcome2 |> sens(pred, truth) -> lr.sens
+
+# precision
+lr.outcome2 |> precision(pred, truth) -> lr.prec
+
+lr.eval2 = c(lr.acc$.estimate, lr.spec$.estimate, lr.sens$.estimate, lr.prec$.estimate)
+names(lr.eval2) <- c("accuracy", "specificity", "sensitivity", "precision")
+
+rbind(rf.eval2, lr.eval2)
+
+```
+
+```         
+    accuracy specificity sensitivity precision
+```
+
+rf.eval 0.913125 0.8754124 0.7518342 0.4911979 lr.eval 0.904950 0.8583558 0.7347067 0.5309063
+
+```         
+      accuracy specificity sensitivity precision
+```
+
+rf.eval2 0.9052387 0.8555632 0.7625292 0.4358479 lr.eval2 0.9085011 0.8639244 0.7750233 0.4445240
 
 ## Discussion
 
-What do your results mean? How do they relate to your research question? What limitations exist? What would you do next?
+PCA & UMAP might not be the best approach for behavioral data, especially when no distinctive features (e.g. race, region, country) are present.
+
+Random forest has higher accuracy, specificity and sensitivity, while logistic regression has higher precision.
 
 ## Conclusions
 
-Summarize your findings and their implications.
+Higher dimensions might be necessary for the dataset to clarify the
 
 ## References
 
-Add any references to papers, data sources, or resources you used.
+Dataset source:
 
 ------------------------------------------------------------------------
 

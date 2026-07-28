@@ -8,24 +8,24 @@ about:
   - text: GitHub
     href: https://github.com/JS-Kong1121/jengshikong.github.io
   - text: email
-    href: (mailto:jengshi-kong@ou.edu)
+    href: "mailto:jengshi-kong@ou.edu"
 ---
 
 ::: columnpage
-# Hello! 👋
+## Hello! 
 
 Welcome to my research profile website. I'm a student in the Intro to Reproducible Data Analysis Using R course.
 
-## About Me
+### About Me
 
 Replace this section with information about yourself:
 
 - **Name:** Jeng Shi Kong
 - **Institution:** University of Oklahoma
-- **Research Interests:** Neuroscience, Neurology, Stroke, Brain aging,
+- **Research Interests:** Neuroscience, Neurology, Stroke, Brain aging
 - **Email:** jengshi-kong\@ou.edu
 
-## My Research
+### My Research
 
 I'm interested in understanding neuroscience, neurology, physiology, behavioral neuroscience,stroke management and brain aging. Through this course, I've learned how to:
 
@@ -34,7 +34,7 @@ I'm interested in understanding neuroscience, neurology, physiology, behavioral 
 - Build websites to share my work
 - Manage my research projects with Git and GitHub
 
-## This Website
+### This Website
 
 This site showcases my research and projects. Check out my **Projects** page to see my final report and other work!
 

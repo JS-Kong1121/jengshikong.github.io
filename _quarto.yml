@@ -16,7 +16,7 @@ website:
         href: projects.qmd
       - icon: github
         text: "GitHub"
-        href: https://github.com
+        href: https://github.com/JS-Kong1121/jengshikong.github.io
 
 format:
   html:
