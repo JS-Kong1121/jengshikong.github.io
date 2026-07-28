@@ -162,47 +162,7 @@ pca_prep |>
 
 As we can see that first 5 PCs only explain 51.2% of variances, and the first 10 PCs explain 84.5% of total variances. But since we only have 15 variables, the dimensionality reduction with PCA is fairly small.
 
-Lets look at clustering and see how our population clusters together.
-### Hierarchical Clustering
-```{r}
-age_group_labels <- age_data_plot$age_group
-table(age_group_labels)
 
-score_grouped_data <- age_data_plot |> 
-  mutate(Performance_i = factor(case_when(
-  cognitive_assessment_score >= 16 & cognitive_assessment_score < 22 ~ "Low",
-  cognitive_assessment_score >= 22 & cognitive_assessment_score < 26 ~ "Average",
-  cognitive_assessment_score >= 26 & cognitive_assessment_score <= 30 ~ "High"),
-  levels = c("Low", "Average", "High"), 
-  ordered = TRUE))
-
-# Data
-hc_data <- score_grouped_data |>  slice_sample(n = 1000)
-  
-sliced_hc_data <- subset(hc_data, select = -c(Performance_i, smoking_status, age_group, cognitive_assessment_score, age))
-
-# Scale
-hc_data_std <- scale(sliced_hc_data)
-
-# Distance
-hc_data_dist <- dist(hc_data_std)
-
-# Hierarchical clustering algorithm
-hc.out_data <- hclust(hc_data_dist, method = "complete")
-
-hc.out_data
-
-# Dendogram
-plot(hc.out_data)
-rect.hclust(hc.out_data, k = 6, border = 2:7)
-
-data.clusters <- cutree(hc.out_data, k = 9)
-
-rownames(hc_data_std) <- paste(hc_data$Performance_i, hc_data$age_group, 1:dim(hc_data)[1], sep = "_")
-fviz_cluster(list(data = hc_data_std, cluster = data.clusters))
-
-table(data.clusters, hc_data$age_group)
-```
 
 ### Random Forest & Linear Regressions
 ```{r}
@@ -620,5 +580,50 @@ Higher dimensions might be necessary for the dataset to clarify the
 Dataset source: https://www.kaggle.com/datasets/rahibvk/predicting-cognitive-health-from-lifestyle-habits/data
 
 ------------------------------------------------------------------------
+
+
+## Extras:
+Lets look at clustering and see how our population clusters together.
+### Hierarchical Clustering
+```{r}
+age_group_labels <- age_data_plot$age_group
+table(age_group_labels)
+
+score_grouped_data <- age_data_plot |> 
+  mutate(Performance_i = factor(case_when(
+  cognitive_assessment_score >= 16 & cognitive_assessment_score < 22 ~ "Low",
+  cognitive_assessment_score >= 22 & cognitive_assessment_score < 26 ~ "Average",
+  cognitive_assessment_score >= 26 & cognitive_assessment_score <= 30 ~ "High"),
+  levels = c("Low", "Average", "High"), 
+  ordered = TRUE))
+
+# Data
+hc_data <- score_grouped_data |>  slice_sample(n = 1000)
+  
+sliced_hc_data <- subset(hc_data, select = -c(Performance_i, smoking_status, age_group, cognitive_assessment_score, age))
+
+# Scale
+hc_data_std <- scale(sliced_hc_data)
+
+# Distance
+hc_data_dist <- dist(hc_data_std)
+
+# Hierarchical clustering algorithm
+hc.out_data <- hclust(hc_data_dist, method = "complete")
+
+hc.out_data
+
+# Dendogram
+plot(hc.out_data)
+rect.hclust(hc.out_data, k = 6, border = 2:7)
+
+data.clusters <- cutree(hc.out_data, k = 9)
+
+rownames(hc_data_std) <- paste(hc_data$Performance_i, hc_data$age_group, 1:dim(hc_data)[1], sep = "_")
+fviz_cluster(list(data = hc_data_std, cluster = data.clusters))
+
+table(data.clusters, hc_data$age_group)
+```
+
 
 **Last updated:** June 2026
