@@ -6,6 +6,7 @@ project:
 website:
   title: "My Research Profile"
   navbar:
+    background: "#454f25"
     search: false
     right:
       - icon: house-fill

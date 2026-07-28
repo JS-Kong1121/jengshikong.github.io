@@ -4,35 +4,26 @@ date: 2026-07-29
 author: "Jeng Shi Kong"
 ---
 
-# Final Report: \[Your Project Title\]
+# Predictive models to predict cognitive performance using random forest & linear regression
 
 ## Introduction
 
-Replace this with an introduction to your research question or project. What are you investigating? Why does it matter?
+Cognitive decline is a common feature of aging and is shaped by both modifiable and nonmodifiable factors, including physical fitness, psychological stress, and genetic predisposition. In some individuals, cognitive deterioration may occur at an accelerated rate and progress to mild cognitive impairment, thereby increasing the risk of Alzheimer’s disease and related dementias. Despite advances in the management of cognitive decline, the development of effective interventions to prevent or delay its progression remains challenging because of the complex interplay among the biological, behavioral, environmental, and genetic factors that influence cognitive aging.
+
+
+## Aim of the study
+
+This project aims to characterize cognitive performance among adults aged 18 to 59 years by: (1) determining whether individuals with similar behavioral profiles exhibit similar cognitive performance and (2) identifying the behavioral factors that are the strongest predictors of cognitive performance. 
 
 ## Methods
 
-Describe how you conducted your analysis. What data did you use? What analyses did you perform?
+This synthetic data set is obtained from Kaggle (see ref. below), with entries of 500,000 and 16 observations which includes lifestyle input, biological & demographic data with realistic distribution. Correlation analysis is used to determine the correlations between observations. Principal component analysis is employed to evaluate if the continuous variables could be summarized using fewer dimensions. Machine-learning models, including random forest and regression-based approaches, will then be developed to determine the relative importance of these behavioral factors and predict cognitive performance.
+
 
 ## Results
-
-Share your findings here. You can include:
-
-- Text explanations
-- Tables
-- Figures and visualizations
-- Code examples (if relevant)
-
-### Example Code Block
-
-Here's a sample R code block:
+### Load the library
 
 ```{r}
-#| code-fold: true
-#| echo: false
-#| error: false
-#| message: false
-
 # Load a library
 library(dplyr)
 library(tidyverse)
@@ -42,17 +33,17 @@ library(ranger)
 library(embed)
 library(dlookr)
 library(ggplot2)
-library("PerformanceAnalytics")
+library(factoextra)
+library(cowplot)
+
 
 # Load data
 raw <- read.csv("/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/clean_realistic_survey_data_500k.csv")
 ```
 
-```{r}
-ggplot(raw, aes(x = age, y = cognitive_assessment_score, color = smoking_status)) +
-  geom_point()
-```
+First, let's look at how age group affects cognitive assessment scores.
 
+### Cognitive assessment scores between age groups
 ```{r}
 age_data_plot <- raw |> 
   mutate(age_group = factor(case_when(
@@ -63,13 +54,33 @@ age_data_plot <- raw |>
   ordered = TRUE)
   )
 
+ggplot(age_data_plot, aes(x = age, fill = age_group)) +
+  geom_histogram(binwidth = 1) +
+  geom_vline(xintercept = 39.5, linetype = "dashed") +
+  geom_vline(xintercept = 64.5, linetype = "dashed") +
+  labs(subtitle = "Histogram of sample by age", x = "Age")
+ 
+sum(raw$age == 18)
+
+ggplot(age_data_plot, aes(x = age_group, fill = age_group)) +
+  geom_bar()+
+  theme_cowplot()+
+  labs(subtitle = "Distribution of sample by age group", x = "Age group")+
+  scale_y_continuous(labels = label_number(big.mark = ","))
+
 ggplot(age_data_plot, aes(x = age_group, y = cognitive_assessment_score, color = age_group)) +
-  geom_boxplot()
+  geom_boxplot()+
+  theme_cowplot()+
+  labs(subtitle = "Cognitive assessment scores between age groups", x = "Age group", y = "Cognitive assessment score")
 ```
 
+Good to know that quite a bit of participants are age 18.
 
-![Cognitive assessment score in different age groups](/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/final-report_files/saved-images/cog_vs_age_group.png)
+From here we can see that younger adults have similar median when compared to middle-aged adult, and older adults have lower median. 
 
+It is not surprising that age has a negative effect on cognitive performance, but what about other variables. The quick view way is to run a correlation matrix. 
+
+### Correlation matrix
 ```{r}
 #Correlation matrix (dropped smoking status data because its categorical)
 #too much data
@@ -80,15 +91,19 @@ mat <- raw |>
 
 mat_sample <- mat |> slice_sample(n = 1000)
 
-GGally::ggpairs(mat_sample)
+CMplot <- GGally::ggpairs(mat_sample, method = "pearson")
+
+CMplot
 ```
 
+Looks bad, right? That's why I have the image here.
 
+![Correlation Matrix](images/CMplot.png)
+From the data we have an idea that most of our variables are relatively normally distributed (except smoking status) and several variables have correlations with cognitive assessment scores, (i.e. age: -0.241, sleep duration: 0.243, sleep quality: 0.318, cardio minutes per week: 0.389, systolic blood pressure: -0.370, ultra processed diet: -0.277, novel learning hrs: 0.179, social connection score: 0.141, chronic stress score: -0.301), but how do we find out which one has the biggest effects? If you guess random forest, that's where we are going into!
 
+But before that, let's run a PCA to summarize the variation and see if this dataset can be represented by a smaller number of components.
 
-
-![Correlation Matrix](/Users/olliekong/Documents/GitHub/jengshikong.github.io/projects/final-report_files/saved-images/CorrelationAnalysis.png)
-
+### PCA
 ```{r}
 #PCA
 set.seed(999)
@@ -117,12 +132,20 @@ pca_prep |>
   filter(terms == "percent variance") |>
   ggplot(aes(x = component, y = value)) +
   geom_col(fill = "skyblue") +
-  xlim(c(0, 5)) +
+  xlim(c(0, 16)) +
   ylab("% of total variance") +
-  geom_text(aes(label = round(value, 1)), vjust = 1.5)
+  geom_text(aes(label = round(value, 1)), vjust = 1.5)+
+  labs(subtitle = "Percent variance explained by component")
 
-#| fig-width: 12
-#| fig-height: 6
+pca_cumulative_table <- pca_prep |>
+  tidy(id = "pca", type = "variance") |>
+  filter(terms == "cumulative percent variance") |>
+  transmute(
+    Component = paste0("PC", component),
+    Cumulative_Variance = round(value, 1)
+  )
+
+pca_cumulative_table
 
 # Plot which predictors/variables are explained in each principal component
 pca_prep |>
@@ -135,96 +158,53 @@ pca_prep |>
     x = "Absolute value of contribution",
     y = NULL, fill = "Pos Affil") 
 
-pca_plot <- pca_bake |> 
-  ggplot(aes(PC1, PC2)) +
-  geom_point(aes(color = smoking_status, shape = smoking_status), 
-             alpha = 0.8, 
-             size = 2) +
-  scale_colour_manual(values = c("darkorange","purple","cyan4")) +
-  theme_bw()
-
-pca_plot
-
-#Add the vectors for how the variables are explained by each PC
-pca_wider <- pca_prep |> 
-              tidy(id = "pca", type = "coef") |>
-              pivot_wider(names_from = component, id_cols = terms)
-
-arrow_style <- arrow(length = unit(.05, "inches"), type = "closed")
-
-pca_plot +
-  geom_segment(data = pca_wider,
-               aes(xend = PC1, yend = PC2), 
-               x = 0, 
-               y = 0, 
-               arrow = arrow_style) + 
-  geom_text(data = pca_wider,
-            aes(x = PC1, y = PC2, label = terms), 
-            hjust = 0, 
-            vjust = 1,
-            size = 5, 
-            color = '#0A537D') 
-
-pca_plot <- pca_bake |> 
-  ggplot(aes(PC1, PC3)) +
-  geom_point(aes(color = smoking_status, shape = smoking_status), 
-             alpha = 0.8, 
-             size = 2) +
-  scale_colour_manual(values = c("darkorange","purple","cyan4")) +
-  theme_bw()
-
-pca_plot
 ```
 
-As we can see that PCA is not the best way to make clusters of our population. PC1 only explain 17% of the variances and we reach 50% variances explained at PC3.
+As we can see that first 5 PCs only explain 51.2% of variances, and the first 10 PCs explain 84.5% of total variances. But since we only have 15 variables, the dimensionality reduction with PCA is fairly small.
 
-What i want to say is that this dataset does not have a distinctive factor for
-
+Lets look at clustering and see how our population clusters together.
+### Hierarchical Clustering
 ```{r}
-set.seed(666)
+age_group_labels <- age_data_plot$age_group
+table(age_group_labels)
 
-UMAP_raw <- raw |>
-  slice_sample(n= 50000)
-
-UMAP_data <- UMAP_raw |> 
+score_grouped_data <- age_data_plot |> 
   mutate(Performance_i = factor(case_when(
   cognitive_assessment_score >= 16 & cognitive_assessment_score < 22 ~ "Low",
   cognitive_assessment_score >= 22 & cognitive_assessment_score < 26 ~ "Average",
   cognitive_assessment_score >= 26 & cognitive_assessment_score <= 30 ~ "High"),
   levels = c("Low", "Average", "High"), 
-  ordered = TRUE), 
-  )
+  ordered = TRUE))
 
-cleaned_UMAP_data <- subset(UMAP_data, select = -cognitive_assessment_score) 
+# Data
+hc_data <- score_grouped_data |>  slice_sample(n = 1000)
+  
+sliced_hc_data <- subset(hc_data, select = -c(Performance_i, smoking_status, age_group, cognitive_assessment_score, age))
 
-UMAP_recipe <-
-  recipe(Performance_i ~ ., data = cleaned_UMAP_data) |>
-  update_role(Performance_i, smoking_status, new_role = "id") |>
-  step_naomit(all_predictors()) |>
-  step_normalize(all_predictors()) |>
-  step_umap(all_numeric_predictors(), num_comp = 3)
+# Scale
+hc_data_std <- scale(sliced_hc_data)
 
-UMAP_recipe
+# Distance
+hc_data_dist <- dist(hc_data_std)
 
-#Prep data
-UMAP_prep <- prep(UMAP_recipe, UMAP_data)
+# Hierarchical clustering algorithm
+hc.out_data <- hclust(hc_data_dist, method = "complete")
 
-UMAP_prep
+hc.out_data
 
-#Bake data
-UMAP_bake <- bake(UMAP_prep, new_data = NULL)
+# Dendogram
+plot(hc.out_data)
+rect.hclust(hc.out_data, k = 6, border = 2:7)
 
-UMAP_bake
+data.clusters <- cutree(hc.out_data, k = 9)
 
-UMAP_bake |> 
-  ggplot(aes(x = UMAP1, y = UMAP2, color = Performance_i, shape = smoking_status))+
-  geom_point(alpha = .5, size = 2) +
-  scale_color_viridis_d()
+rownames(hc_data_std) <- paste(hc_data$Performance_i, hc_data$age_group, 1:dim(hc_data)[1], sep = "_")
+fviz_cluster(list(data = hc_data_std, cluster = data.clusters))
 
+table(data.clusters, hc_data$age_group)
 ```
 
-## Prep the Data
-
+### Random Forest & Linear Regressions
 ```{r}
 # rf & lr: Prepare the dataset
 grouped_data <- raw |> 
@@ -331,28 +311,6 @@ rf_importance <- rf_engine$variable.importance
 rf_importance
 
 ```
-
-Importance of each variables through random forest
-
-| Importance                   | Importance |
-|------------------------------|------------|
-| age                          | 731.25557  |
-| diet_ultra_processed_pct     | 416.80262  |
-| cardio_mins_wk               | 401.06220  |
-| novel_learning_hrs_wk        | 247.79172  |
-| chronic_stress_score         | 207.06067  |
-| sleep_duration_hrs           | 179.65047  |
-| screen_time_recreational_hrs | 173.99464  |
-| blood_pressure_sys           | 163.87161  |
-| social_media_hrs             | 161.56793  |
-| water_intake_liters          | 145.43926  |
-| Current_smoke                | 144.45285  |
-| social_connection_score      | 135.53641  |
-| alcohol_drinks_wk            | 87.79295   |
-| sleep_quality_score          | 87.28408   |
-| diet_omega3_freq             | 79.49748   |
-| Never_smoke                  | 25.18725   |
-| Former_smoke                 | 14.30315   |
 
 ```{r}
 
@@ -646,17 +604,6 @@ rbind(rf.eval2, lr.eval2)
 
 ```
 
-```         
-    accuracy specificity sensitivity precision
-```
-
-rf.eval 0.913125 0.8754124 0.7518342 0.4911979 lr.eval 0.904950 0.8583558 0.7347067 0.5309063
-
-```         
-      accuracy specificity sensitivity precision
-```
-
-rf.eval2 0.9052387 0.8555632 0.7625292 0.4358479 lr.eval2 0.9085011 0.8639244 0.7750233 0.4445240
 
 ## Discussion
 
@@ -670,7 +617,7 @@ Higher dimensions might be necessary for the dataset to clarify the
 
 ## References
 
-Dataset source:
+Dataset source: https://www.kaggle.com/datasets/rahibvk/predicting-cognitive-health-from-lifestyle-habits/data
 
 ------------------------------------------------------------------------
 
