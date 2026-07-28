@@ -12,6 +12,49 @@ author: "Jeng Shi Kong"
 
 Cognitive decline is a common feature of aging and is shaped by both modifiable and nonmodifiable factors, including physical fitness, psychological stress, and genetic predisposition. In some individuals, cognitive deterioration may occur at an accelerated rate and progress to mild cognitive impairment, thereby increasing the risk of Alzheimer’s disease and related dementias. Despite advances in the management of cognitive decline, the development of effective interventions to prevent or delay its progression remains challenging because of the complex interplay among the biological, behavioral, environmental, and genetic factors that influence cognitive aging.
 
+### Data Dictionary 
+Demographics & Biometrics:
+
+age (Integer): The simulated age of the partici- pant (ranging from 18 to 90).
+
+blood_pressure_sys (Integer): Simulated systolic blood pressure (the top number). This is mathematically influenced by age, diet, stress, and exercise within the simulation.
+
+Core Lifestyle Habits:
+
+sleep_duration_hrs (Float): Average hours of sleep per night. Negatively impacted by high stress levels in the simulation.
+
+sleep_quality_score (Integer): Self-rated scale from 1 (poor) to 10 (excellent).
+
+cardio_mins_wk (Integer): Total minutes of elevated heart rate exercise per week. Follows a log-normal distribution to mimic reality (most do a little, a few do a lot).
+
+water_intake_liters (Float): Average daily water consumption. (Note: Included as a "noise" variable for feature selection practice).
+
+screen_time_recreational_hrs (Float): Daily hours spent on non-work screens.
+
+social_media_hrs (Float): Daily hours specifically on social media apps.
+
+Diet & Substance Intake:
+
+diet_ultra_processed_pct (Float): Estimated percentage of the participant's diet consisting of highly processed foods.
+
+diet_omega3_freq (Integer): Frequency (days per week) of consuming brain-healthy foods like fish, nuts, or seeds.
+
+smoking_status (Categorical): Survey response categorized as "Current", "Former", or "Never".
+
+alcohol_drinks_wk (Integer): Total alcoholic beverages consumed per week.
+
+Neuroplasticity & Mental Health:
+
+novel_learning_hrs_wk (Float): Hours per week spent learning a new, difficult skill (e.g., a new language, coding, instrument). Acts as a neuroprotective bonus in the target calculation.
+
+social_connection_score (Integer): Self-rated scale from 1 (isolated) to 10 (highly supported) on feeling connected to others.
+
+chronic_stress_score (Integer): Self-rated scale from 1 (low) to 10 (high) on daily perceived stress. Acts as a heavy penalty to the target score.
+
+Target Variable (The Output):
+
+cognitive_assessment_score (Integer): The target variable designed for regression models. Modeled after the real-world MoCA (Montreal Cognitive Assessment) scale from 5 to 30. It is the mathematical culmination of a perfect baseline score minus penalties (age, stress, poor diet, smoking) plus bonuses (cardio, learning, social connection), along with randomized, irreducible human noise.
+
 ## Aim of the study
 
 This project aims to characterize cognitive performance among adults aged 18 to 59 years by: (1) determining whether individuals with similar behavioral profiles exhibit similar cognitive performance and (2) identifying the behavioral factors that are the strongest predictors of cognitive performance. 

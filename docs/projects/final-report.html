@@ -161,7 +161,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <ul>
   <li><a href="#predictive-models-to-predict-cognitive-performance-using-random-forest-linear-regression" id="toc-predictive-models-to-predict-cognitive-performance-using-random-forest-linear-regression" class="nav-link active" data-scroll-target="#predictive-models-to-predict-cognitive-performance-using-random-forest-linear-regression">Predictive models to predict cognitive performance using random forest &amp; linear regression</a>
   <ul class="collapse">
-  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a>
+  <ul class="collapse">
+  <li><a href="#data-dictionary" id="toc-data-dictionary" class="nav-link" data-scroll-target="#data-dictionary">Data Dictionary</a></li>
+  </ul></li>
   <li><a href="#aim-of-the-study" id="toc-aim-of-the-study" class="nav-link" data-scroll-target="#aim-of-the-study">Aim of the study</a></li>
   <li><a href="#methods" id="toc-methods" class="nav-link" data-scroll-target="#methods">Methods</a></li>
   <li><a href="#results" id="toc-results" class="nav-link" data-scroll-target="#results">Results</a>
@@ -226,6 +229,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="introduction" class="level2">
 <h2 class="anchored" data-anchor-id="introduction">Introduction</h2>
 <p>Cognitive decline is a common feature of aging and is shaped by both modifiable and nonmodifiable factors, including physical fitness, psychological stress, and genetic predisposition. In some individuals, cognitive deterioration may occur at an accelerated rate and progress to mild cognitive impairment, thereby increasing the risk of Alzheimer’s disease and related dementias. Despite advances in the management of cognitive decline, the development of effective interventions to prevent or delay its progression remains challenging because of the complex interplay among the biological, behavioral, environmental, and genetic factors that influence cognitive aging.</p>
+<section id="data-dictionary" class="level3">
+<h3 class="anchored" data-anchor-id="data-dictionary">Data Dictionary</h3>
+<p>Demographics &amp; Biometrics:</p>
+<p>age (Integer): The simulated age of the partici- pant (ranging from 18 to 90).</p>
+<p>blood_pressure_sys (Integer): Simulated systolic blood pressure (the top number). This is mathematically influenced by age, diet, stress, and exercise within the simulation.</p>
+<p>Core Lifestyle Habits:</p>
+<p>sleep_duration_hrs (Float): Average hours of sleep per night. Negatively impacted by high stress levels in the simulation.</p>
+<p>sleep_quality_score (Integer): Self-rated scale from 1 (poor) to 10 (excellent).</p>
+<p>cardio_mins_wk (Integer): Total minutes of elevated heart rate exercise per week. Follows a log-normal distribution to mimic reality (most do a little, a few do a lot).</p>
+<p>water_intake_liters (Float): Average daily water consumption. (Note: Included as a “noise” variable for feature selection practice).</p>
+<p>screen_time_recreational_hrs (Float): Daily hours spent on non-work screens.</p>
+<p>social_media_hrs (Float): Daily hours specifically on social media apps.</p>
+<p>Diet &amp; Substance Intake:</p>
+<p>diet_ultra_processed_pct (Float): Estimated percentage of the participant’s diet consisting of highly processed foods.</p>
+<p>diet_omega3_freq (Integer): Frequency (days per week) of consuming brain-healthy foods like fish, nuts, or seeds.</p>
+<p>smoking_status (Categorical): Survey response categorized as “Current”, “Former”, or “Never”.</p>
+<p>alcohol_drinks_wk (Integer): Total alcoholic beverages consumed per week.</p>
+<p>Neuroplasticity &amp; Mental Health:</p>
+<p>novel_learning_hrs_wk (Float): Hours per week spent learning a new, difficult skill (e.g., a new language, coding, instrument). Acts as a neuroprotective bonus in the target calculation.</p>
+<p>social_connection_score (Integer): Self-rated scale from 1 (isolated) to 10 (highly supported) on feeling connected to others.</p>
+<p>chronic_stress_score (Integer): Self-rated scale from 1 (low) to 10 (high) on daily perceived stress. Acts as a heavy penalty to the target score.</p>
+<p>Target Variable (The Output):</p>
+<p>cognitive_assessment_score (Integer): The target variable designed for regression models. Modeled after the real-world MoCA (Montreal Cognitive Assessment) scale from 5 to 30. It is the mathematical culmination of a perfect baseline score minus penalties (age, stress, poor diet, smoking) plus bonuses (cardio, learning, social connection), along with randomized, irreducible human noise.</p>
+</section>
 </section>
 <section id="aim-of-the-study" class="level2">
 <h2 class="anchored" data-anchor-id="aim-of-the-study">Aim of the study</h2>
