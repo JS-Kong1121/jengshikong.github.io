@@ -1,10 +1,12 @@
 ---
-title: "Final Report: [Your Project Title]"
+title: "Final Report: Predictive models to predict cognitive performance using random forest & linear regression"
 date: 2026-07-29
 author: "Jeng Shi Kong"
 ---
 
 # Predictive models to predict cognitive performance using random forest & linear regression
+
+![Source: Unsplash](images/unsplash.jpg)
 
 ## Introduction
 
