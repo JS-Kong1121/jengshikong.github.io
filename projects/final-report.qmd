@@ -657,6 +657,81 @@ Dataset source: https://www.kaggle.com/datasets/rahibvk/predicting-cognitive-hea
 
 ## Extras:
 Lets look at clustering and see how our population clusters together.
+```{r}
+low_performers <- grouped_data |>
+  filter(Performance_i == "Low")
+
+average_performers <- grouped_data |>
+  filter(Performance_i == "Average")
+
+high_performers <- grouped_data |>
+  filter(Performance_i == "High")
+
+# Low performers age
+hist(low_performers$age)
+
+mean(low_performers$age)
+
+median(low_performers$age)
+
+# Average performers age
+hist(average_performers$age)
+
+mean(average_performers$age)
+
+median(average_performers$age)
+
+# High performers age
+hist(high_performers$age)
+
+mean(high_performers$age)
+
+median(high_performers$age)
+
+# Low performers: processed diet
+hist(low_performers$diet_ultra_processed_pct)
+
+mean(low_performers$diet_ultra_processed_pct)
+
+median(low_performers$diet_ultra_processed_pct)
+
+# Average performers: Processed diet
+hist(average_performers$diet_ultra_processed_pct)
+
+mean(average_performers$diet_ultra_processed_pct)
+
+median(average_performers$diet_ultra_processed_pct)
+
+# High performers: Processed diet
+hist(high_performers$diet_ultra_processed_pct)
+
+mean(high_performers$diet_ultra_processed_pct)
+
+median(high_performers$diet_ultra_processed_pct)
+
+# Low performers: cardio minutes per week
+hist(low_performers$cardio_mins_wk)
+
+mean(low_performers$cardio_mins_wk)
+
+median(low_performers$cardio_mins_wk)
+
+# Average performers: Cardio minutes per week
+hist(average_performers$cardio_mins_wk)
+
+mean(average_performers$cardio_mins_wk)
+
+median(average_performers$cardio_mins_wk)
+
+# High performers: Cardio minutes per week
+hist(high_performers$cardio_mins_wk)
+
+mean(high_performers$cardio_mins_wk)
+
+median(high_performers$cardio_mins_wk)
+
+```
+
 ### Hierarchical Clustering
 ```{r}
 age_group_labels <- age_data_plot$age_group
